@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Participant Ticket</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+        .header-image {
+            height: 150px;
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+        .ticket {
+            border: 1px solid #000;
+            padding: 20px;
+        }
+        .personal-details {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 10px;
+        }
+        .personal-details .image {
+            background-color: #bebebe;
+            padding: 20px;
+        }
+        .personal-details .details {
+            background-color: #f4f4f4;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .details .single-line {
+            display: flex;
+            gap: 10px;
+        }
+        .personal-details .field {
+            background-color: #fff;
+            padding: 10px 5px;
+            flex: 1;
+        }
+        .personal-details .field label {
+            font-weight: bold;
+        }
+
+        .programs-container {
+            background-color: #f4f4f4;
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+        .programs-wrapper {
+            padding: 10px;
+        }
+        .programs-wrapper:nth-child(2) {
+            border-left: 1px solid #000;
+            border-right: 1px solid #000;
+        }
+        .programs-wrapper .program-table-heading {
+            background-color: #925a12;
+            padding: 10px;
+            margin-bottom: 10px;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+        }
+        .programs-wrapper .program-table-body {
+            padding: 10px;
+            background-color: #fff;
+            height: 250px;
+            text-align: left;
+        }
+        .program-table-body .prpogram {
+            margin: 0;
+            margin-bottom: 5px;
+        }
+        .signature-container {
+            margin-top: 10px;
+            margin-bottom: 60px;
+            text-align: center;
+            display: flex;
+            justify-content: space-around;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-image">
+        Header Image
+    </div>
+    <div class="ticket">
+        <div class="personal-details">
+            <div class="image">
+                Image
+            </div>
+            <div class="details">
+                <div class="field">
+                    <label for="name">Name:</label>
+                    <span>{{name}}</span>
+                </div>
+                <div class="single-line">
+                    <div class="field">
+                        <label for="name">Sex:</label>
+                        <span>{{sex}}</span>
+                    </div>
+                    <div class="field">
+                        <label for="name">Zone:</label>
+                        <span>{{zone}}</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="name">College:</label><br>
+                    <span>{{college}}</span>
+                </div>
+                <div class="field">
+                    <label for="name">Course:</label>
+                    <span>{{course}}</span>
+                </div>
+                <div class="field">
+                    <label for="name">Date of Birth:</label>
+                    <span>{{dateOfBirth}}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="programs-container">
+            <div class="programs-wrapper">
+                <div class="program-table-heading">Off Stage</div>
+                <div class="program-table-body">
+                    {{#each programs.offStage}}
+                        <p class="prpogram">{{this}}</p>
+                    {{/each}}
+                </div>
+            </div>
+            <div class="programs-wrapper">
+                <div class="program-table-heading">Stage</div>
+                <div class="program-table-body">
+                    {{#each programs.stage}}
+                        <p class="prpogram">{{this}}</p>
+                    {{/each}}
+                </div>
+            </div>
+            <div class="programs-wrapper">
+                <div class="program-table-heading">Group</div>
+                <div class="program-table-body">
+                    {{#each programs.group}}
+                        <p class="prpogram">{{this}}</p>
+                    {{/each}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="signature-container">
+        <p>Principal Signature & Seal</p>
+        <p>UUC</p>
+    </div>
+    <div class="bottom-notes">
+        <p>Notes:</p>
+        <ul>
+            <li>Participants should bring their college ID card.</li>
+            <li>Participants should report at the venue 30 minutes before the event.</li>
+        </ul>
+    </div>
+</body>
+</html>
