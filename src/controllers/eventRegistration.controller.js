@@ -304,7 +304,7 @@ const deleteEventRegistration = asyncHandler(async (req, res, next) => {
     );
 });
 
-export {
+export const eventRegistrationController = {
   createEventRegistration,
   getAllEventRegistrations,
   getEventRegistrationById,

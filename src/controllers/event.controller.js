@@ -131,7 +131,7 @@ const deleteEvent = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, {}, "Event deleted successfully"));
 });
 
-export {
+export const eventController = {
   fetchAllEvents,
   fetchResultPublishedEvents,
   createEvent,

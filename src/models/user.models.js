@@ -1,70 +1,19 @@
 import mongoose, { Schema } from "mongoose";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema({
-  user_type: { type: String, enum: ["admin", "rep", "member"], required: true },
   name: { type: String, required: true },
-  // email: { type: String, required: true, unique: true },
-  gender: { type: String, required: true, enum: ["male", "female", "other"] },
-  number: { type: String, required: true, unique: true },
-  // password: { type: String, required: true },
-  // password is required for admin and rep
-  password: {
-    type: String,
-    required: function () {
-      return this.user_type === "admin" || this.user_type === "rep";
-    },
-  },
-  department: { type: String, required: true }, // Department name (e.g., "Computer Science")
-  year_of_study: { type: Number, required: true }, // Year of study (e.g., 1, 2, 3, 4)
-  total_score: { type: Number, default: 0 }, // Running total score for the user
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now },
+  gender: { type: String, required: true, enum: ["male", "female"] },
+  phoneNumber: { type: String, required: true, unique: true },
+  course : { type: String, required: true },
+  college: { type: String, required: true },
+  semester : { type: Number, required: true },
+  year : {type : Number , required : true},
+  capId: { type: String, required: true },
+  image: { type: String, required: true },
+  dob : { type: Date, required: true },
+  total_score: { type: Number, default: 0 }, 
+} , {
+    timestamps: true,
 });
-
-userSchema.pre("save", async function (next) {
-  if (this.user_type === "member") {
-    // Skip password hashing for members
-    return next();
-  }
-
-  if (this.isModified("password") && this.password) {
-    this.password = await bcrypt.hash(this.password, 8);
-  }
-  next();
-});
-
-userSchema.methods.isPasswordCorrect = async function (password) {
-  return await bcrypt.compare(password, this.password);
-};
-
-userSchema.methods.generateJWT = function () {
-  return jwt.sign(
-    {
-      _id: this._id,
-      user_type: this.user_type,
-      email: this.email,
-      name: this.name,
-    },
-    process.env.ACCESS_TOKEN_SECRET,
-    {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
-    }
-  );
-};
-
-userSchema.methods.generateAccessToken = function () {
-  return jwt.sign(
-    {
-      _id: this._id,
-      email: this.email,
-    },
-    process.env.ACCESS_TOKEN_SECRET,
-    {
-      expiresIn: process.env.ACCESS_TOKEN_EXPIRATION,
-    }
-  );
-};
 
 export const User = mongoose.model("User", userSchema);

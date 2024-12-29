@@ -1,4 +1,4 @@
-export const DB_NAME = "EmeaArts";
+export const DB_NAME = "C-Zone";
 
 export const POSITIONS = {
   1: "first",
@@ -6,26 +6,4 @@ export const POSITIONS = {
   3: "third",
 };
 
-export const DEPARTMENTS = {
-  arts: [
-    "BA English",
-    "BA West Asian Studies and History",
-    "BA Economics",
-    "MA History",
-    "MA Economics",
-    "MA English",
-  ],
-  BVoc: [
-    "BVoc Logistics Management",
-    "BVoc Professional Accounting and Taxation",
-    "BVoc Islamic Finance",
-  ],
-  Science: [
-    "BSc Computer Science",
-    "BSc Microbiology",
-    "BSc Mathematics and Physics",
-    "BSc Biochemistry",
-    "BSc Biotechnology",
-  ],
-  Commerce: ["BCom CA", "BCom Cooperation", "BBA", "MCom"],
-};
+export const DEPARTMENTS = [];

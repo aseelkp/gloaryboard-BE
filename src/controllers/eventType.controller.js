@@ -111,9 +111,10 @@ const deleteEventType = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, null, "Event type deleted successfully"));
 });
 
-
-
-
-
-export { fetchAllEventTypes, createEventType, updateEventType, deleteEventType };
+export const eventTypeController = {
+  fetchAllEventTypes,
+  createEventType,
+  updateEventType,
+  deleteEventType,
+};
 
