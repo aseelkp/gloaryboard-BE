@@ -35,7 +35,7 @@ const registerOrg = asyncHandler(async (req, res) => {
 
     return res
         .status(201)
-        .json(new ApiResponse(201, res, "User created successfully"));
+        .json(new ApiResponse(201, user, "User created successfully"));
 });
 
 export const adminController = {
