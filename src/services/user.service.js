@@ -20,7 +20,7 @@ const registerUser = async (req) => {
     const user = await User.create({
       ...data,
     });
-    const image = await storageService.uploadToSpace(imageLocalPath, user._id);
+    var image = await storageService.uploadToSpace(imageLocalPath, user._id);
     if (!image) {
       throw new ApiError(500, "Failed to upload image");
     }

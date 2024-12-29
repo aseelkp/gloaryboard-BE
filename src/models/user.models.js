@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   course : { type: String, required: true },
   college: { type: String, required: true },
   semester : { type: Number, required: true },
-  year : {type : Number , required : true},
+  year_of_study : {type : Number , required : true},
   capId: { type: String, required: true },
   image: { type: String, required: true },
   dob : { type: Date, required: true },

@@ -32,13 +32,7 @@ router.route("/events").post(eventController.createEvent);
 router.route("/events/update/:id").patch(eventController.updateEvent);
 router.route("/events/delete/:id").delete(eventController.deleteEvent);
 
-// event registration routes
-router.route("/event-registration").get(eventRegistrationController.getAllEventRegistrations);
-router.route("/event-registration").post(eventRegistrationController.createEventRegistration);
-router.route("/event-registration/:id").get(eventRegistrationController.getEventRegistrationById);
-router.route("/event-registration/event/:id").get(eventRegistrationController.getEventRegistrationByEventId);
-router.route("/event-registration/update/:id").patch(eventRegistrationController.updateEventRegistration);
-router.route("/event-registration/delete/:id").delete(eventRegistrationController.deleteEventRegistration);
+
 
 // Result routes
 router.route("/result").post(resultController.createResult);

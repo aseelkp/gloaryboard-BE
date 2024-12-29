@@ -20,10 +20,11 @@ const uploadToSpace = async (fileLocalPath , userId) => {
         Bucket: process.env.DO_SPACES_NAME,
         Key: `user-profile/${Date.now()}_${fileLocalPath.split("/").pop()}-${userId}`,
         Body: file,
+        ACL: "public-read",
     };
     try {
         const data = await s3.upload(params).promise();
-        console.log(`File uploaded successfully. ${data.Location}`);
+        console.warn(`File uploaded successfully. ${data.Location}`);
         fs.unlinkSync(fileLocalPath);
         return data.Location;
     } catch (error) {
