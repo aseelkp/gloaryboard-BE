@@ -44,8 +44,12 @@ const updateConfig = asyncHandler(async (req, res) => {
   if (!data) {
     throw new ApiError(400, "Data is required");
   }
-
-  const config = await appConfigService.updateConfig(id, data);
+  let config;
+  if (id.match(/^[0-9a-fA-F]{24}$/)) {
+    config = await appConfigService.updateConfig(id, data);
+  } else {
+    throw new ApiError(400, "Invalid id");
+  }
 
   if (!config) {
     throw new ApiError(500, "Failed to update config");

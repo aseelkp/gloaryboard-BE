@@ -1,4 +1,5 @@
 import { AppConfig } from "../models/appConfig.model.js";
+import { ApiError } from "../utils/ApiError.js";
 
 const getConfigs = async () => {
   try {
@@ -21,16 +22,13 @@ const addConfig = async (data) => {
 
 const updateConfig = async (id, data) => {
   try {
-    const config = await AppConfig.findById(id);
-    if (!config) {
+    const updatedConfig = await AppConfig.findByIdAndUpdate(id, data, {
+      new: true,
+    });
+
+    if (!updatedConfig) {
       throw new ApiError(404, "Config not found");
     }
-
-    config.value = data.value;
-
-    await config.save();
-
-    const updatedConfig = await AppConfig.findById(id);
 
     return updatedConfig;
   } catch (error) {
