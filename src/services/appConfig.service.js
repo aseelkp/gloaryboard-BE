@@ -1,6 +1,6 @@
-import { AppConfig } from "../models/appConfig.model";
+import { AppConfig } from "../models/appConfig.model.js";
 
-const getConfigs = async (data) => {
+const getConfigs = async () => {
   try {
     const configs = await AppConfig.find();
     return configs;
@@ -9,6 +9,16 @@ const getConfigs = async (data) => {
   }
 };
 
+const addConfig = async (data) => {
+  try {
+    const config = new AppConfig(data);
+    await config.save();
+    return config;
+  } catch (error) {
+    throw error;
+  } 
+}
+
 const updateConfig = async (id, data) => {
   try {
     const config = await AppConfig.findById(id);
@@ -16,9 +26,7 @@ const updateConfig = async (id, data) => {
       throw new ApiError(404, "Config not found");
     }
 
-    Object.keys(data).forEach((key) => {
-      config[key] = data[key];
-    });
+    config.value = data.value;
 
     await config.save();
 
@@ -30,4 +38,4 @@ const updateConfig = async (id, data) => {
   }
 };
 
-const appConfigService = { getConfigs, updateConfig };
+export const appConfigService = { getConfigs, addConfig , updateConfig };

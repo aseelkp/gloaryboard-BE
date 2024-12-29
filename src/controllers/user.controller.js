@@ -45,7 +45,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 })
 const deleteUserById = asyncHandler(async (req, res) => {
-  const { id } = req.query;
+  const { id } = req.params;
 
   const eventRegistration = await EventRegistration.findOne({
     "participants.user": id,

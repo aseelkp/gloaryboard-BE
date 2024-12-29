@@ -14,7 +14,7 @@ router.use(verifyJWT, verifyRole(["admin", "organization"]));
 router.route("/register").post( upload.single('image'), userController.registerUser);
 router.route("/update").put(authController.updateUser);
 router.route("/me").get(authController.getCurrentUser);
-router.route("/delete").get(userController.deleteUserById);
+router.route("/delete/:id").delete(userController.deleteUserById);
 
 // event registration routes
 router.route("/event-registration").get(eventRegistrationController.getAllEventRegistrations);
