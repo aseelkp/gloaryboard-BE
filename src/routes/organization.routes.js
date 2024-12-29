@@ -5,6 +5,7 @@ import { verifyJWT, verifyRole } from "../middlewares/auth.middlewares.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { eventRegistrationController } from "../controllers/eventRegistration.controller.js";
 import { pdfExportController } from "../controllers/pdfExport.controller.js";
+import { appConfigController } from "../controllers/appConfig.controller.js";
 const router = Router();
 
 router.use(verifyJWT, verifyRole(["admin", "organization"]));
@@ -13,7 +14,7 @@ router.use(verifyJWT, verifyRole(["admin", "organization"]));
 router.route("/register").post( upload.single('image'), userController.registerUser);
 router.route("/update").put(authController.updateUser);
 router.route("/me").get(authController.getCurrentUser);
-router.route("/delete").get(userController.deleteUserById);
+router.route("/delete/:id").delete(userController.deleteUserById);
 
 // event registration routes
 router.route("/event-registration").get(eventRegistrationController.getAllEventRegistrations);
@@ -26,5 +27,9 @@ router.route("/event-registration/delete/:id").delete(eventRegistrationControlle
 
 // PDF export routes
 router.route("/participant-tickets").get(pdfExportController.getParticipantTickets);
+
+
+// congigs 
+router.route("/config").get(appConfigController.getConfigs);
 
 export default router;
