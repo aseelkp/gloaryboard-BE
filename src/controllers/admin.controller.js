@@ -47,10 +47,24 @@ const updateOrg = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found");
     }
 
+    if (email && email !== user.email) {
+        const existingUser = await Admin.findOne({ email });
+        if (existingUser && existingUser._id.toString() !== id) {
+            throw new ApiError(409, "Email already exists");
+        }
+        user.email = email;
+    }
+
+    if (phoneNumber && phoneNumber !== user.phoneNumber) {
+        const existingUser = await Admin.findOne({ phoneNumber });
+        if (existingUser && existingUser._id.toString() !== id) {
+            throw new ApiError(409, "Phone number already exists");
+        }
+        user.phoneNumber = phoneNumber;
+    }
+
     if (name) user.name = name;
-    if (email) user.email = email;
     if (password) user.password = password;
-    if (phoneNumber) user.phoneNumber = phoneNumber;
 
     await user.save();
 
