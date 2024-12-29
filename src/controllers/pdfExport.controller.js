@@ -23,6 +23,7 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
     const eventRegistrations = await EventRegistration.find({ "participants.user": user._id }).populate('event');
 
     return {
+      regId: user.userId,
       name: user.name.toUpperCase(),
       sex: user.gender,
       zone: "C zone",
@@ -43,21 +44,27 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
 
   const browser = await puppeteer.launch();
   const pdfDoc = await PDFDocument.create();
+  const copies = [
+    'c-zone copy',
+    'student copy'
+  ]
 
   for (const user of transformedUsers) {
-    const page = await browser.newPage();
+    for(const copy of copies) {
+      const page = await browser.newPage();
 
-    // Populate HTML with user data
-    const userHTML = compiledTemplate(user);
-    await page.setContent(userHTML);
-
-    // Generate the PDF for this user
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
-    const userPdfDoc = await PDFDocument.load(pdfBuffer);
-    const [userPage] = await pdfDoc.copyPages(userPdfDoc, [0]);
-    pdfDoc.addPage(userPage);
-
-    await page.close();
+      // Populate HTML with user data
+      const userHTML = compiledTemplate({...user,copy});
+      await page.setContent(userHTML);
+  
+      // Generate the PDF for this user
+      const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+      const userPdfDoc = await PDFDocument.load(pdfBuffer);
+      const [userPage] = await pdfDoc.copyPages(userPdfDoc, [0]);
+      pdfDoc.addPage(userPage);
+  
+      await page.close();
+    }
   }
 
   await browser.close();
