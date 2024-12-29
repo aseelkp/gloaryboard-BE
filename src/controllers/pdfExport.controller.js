@@ -14,7 +14,7 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
 			course: "Computer Science",
 			dateOfBirth: "21/11/2005",
 			programs: {
-				offStage: ["Quiz", "Essay Writing", "Pencil Drawing"],
+				offStage: ["Quiz", "Essay Writing", "Pencil Drawing with color shading", "Poetry", "Essay Writing", "Pencil Drawing with color", "Poetry", "Essay Writing", "Pencil Drawing with color", "Poetry", "Essay Writing", "Pencil Drawing with color", "Poetry"],
 				stage: ["Solo Dance", "Mappilappattu", "Singing"],
 				group: ["Group Dance", "Drama", "Duff Muttu"]
 			}
