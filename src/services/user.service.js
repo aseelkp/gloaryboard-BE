@@ -4,6 +4,7 @@ import { storageService } from "./storage.service.js";
 
 const registerUser = async (req) => {
   const data = req.body;
+  const fileName = req.file.originalname;
   const imageLocalPath = req.file.path;
 
   try {
@@ -20,7 +21,7 @@ const registerUser = async (req) => {
     const user = await User.create({
       ...data,
     });
-    var image = await storageService.uploadToSpace(imageLocalPath, user._id);
+    var image = await storageService.uploadToSpace(fileName , imageLocalPath, user._id);
     if (!image) {
       throw new ApiError(500, "Failed to upload image");
     }

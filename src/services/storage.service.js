@@ -12,13 +12,13 @@ const s3 = new AWS.S3({
   secretAccessKey: process.env.DO_SPACES_SECRET,
 });
 
-const uploadToSpace = async (fileLocalPath , userId) => {
+const uploadToSpace = async (fileName , fileLocalPath , userId) => {
     if (!fileLocalPath) return null;
 
     const file = fs.readFileSync(fileLocalPath);
     const params = {
         Bucket: process.env.DO_SPACES_NAME,
-        Key: `user-profile/${Date.now()}_${fileLocalPath.split("/").pop()}-${userId}`,
+        Key: `user-profile/${userId}_${Date.now()}_${fileName}`,
         Body: file,
         ACL: "public-read",
     };
