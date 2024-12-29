@@ -4,6 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Result } from "../models/result.models.js";
 import { EventRegistration } from "../models/eventRegistration.models.js";
+import { eventServices } from "../services/event.service.js";
 
 const fetchAllEvents = asyncHandler(async (req, res, next) => {
   const events = await Event.find()
@@ -56,40 +57,23 @@ const fetchResultPublishedEvents = asyncHandler(async (req, res, next) => {
 });
 
 const createEvent = asyncHandler(async (req, res, next) => {
-  const { name, event_type } = req.body;
+  const { name, event_type , event_category , result_category , min_participants ,max_participants } = req.body;
 
-  if (!name || !event_type) {
-    return next(new ApiError("Please provide name and eventTypeId", 400));
+  if (!name || !event_type || !event_category || !result_category || !min_participants || !max_participants) {
+    return next(new ApiError("All fields are required", 400));
   }
 
-  const existingEvent = await Event.findOne({
-    name,
-    event_type,
-  });
+  const event = await eventServices.createEvent(req.body)
 
-  if (existingEvent) {
-    return next(new ApiError("Event already exists", 409));
-  }
-
-  const event = await Event.create({
-    name,
-    event_type,
-  });
-
-  const createdEvent = await Event.findById(event._id);
-
-  if (!createdEvent) {
-    return next(new ApiError("Failed to create event", 500));
-  }
 
   return res
     .status(201)
-    .json(new ApiResponse(201, createdEvent, "Event created successfully"));
+    .json(new ApiResponse(201, event, "Event created successfully"));
 });
 
 const updateEvent = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const { name, event_type } = req.body;
+  const { name, event_type , event_category , result_category , min_participants ,max_participants } = req.body;
 
   const event = await Event.findById(id);
 
@@ -99,6 +83,10 @@ const updateEvent = asyncHandler(async (req, res, next) => {
 
   if (name) event.name = name;
   if (event_type) event.event_type = event_type;
+  if (event_category) event.event_category = event_category;
+  if (result_category) event.result_category = result_category;
+  if (min_participants) event.min_participants = min_participants;
+  if (max_participants) event.max_participants = max_participants;
 
   await event.save();
 

@@ -7,10 +7,23 @@ import { DEPARTMENTS } from "../constants.js";
 import { userService } from "../services/user.service.js";
 
 
-const registerUser = asyncHandler(async (req, res) => {
-  const { name , gender , phoneNumber , course , semester , year, capId , dob } = req.body;
+const fetchAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({}).select(
+    "-password -__v -created_at -updated_at"
+  );
 
-  if ( !name || !gender || !phoneNumber || !course || !semester || !year || !capId || !dob ) {
+  if (!users) {
+    throw new ApiError(404, "No users found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, users, "Users fetched successfully"));
+});
+const registerUser = asyncHandler(async (req, res) => {
+  const { name , gender , phoneNumber , course , semester , year_of_study, capId , dob } = req.body;
+
+  if ( !name || !gender || !phoneNumber || !course || !semester || !year_of_study || !capId || !dob ) {
     throw new ApiError(400, "All fields are required");
   }
 
@@ -31,54 +44,6 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, user, "User created successfully"));
 
 })
-
-
-const fetchAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}).select(
-    "-password -__v -created_at -updated_at"
-  );
-
-  if (!users) {
-    throw new ApiError(404, "No users found");
-  }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, users, "Users fetched successfully"));
-});
-
-const fetchAllMembers = asyncHandler(async (req, res) => {
-  let users;
-
-  if (req.user.user_type === "rep") {
-    const departmentGroup = Object.keys(DEPARTMENTS).find((group) =>
-      DEPARTMENTS[group].includes(req.user.department)
-    );
-
-    if (departmentGroup) {
-      users = await User.find({
-        department: { $in: DEPARTMENTS[departmentGroup] },
-      }).select("-password -__v -created_at -updated_at");
-    }
-
-    // users = await User.find({ department: req.user.department }).select(
-    //   "-password -__v -created_at -updated_at"
-    // );
-  } else if (req.user.user_type === "admin") {
-    users = await User.find({ user_type: "member" }).select(
-      "-password -__v -created_at -updated_at"
-    );
-  }
-
-  if (!users) {
-    throw new ApiError(404, "No users found");
-  }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, users, "Users fetched successfully"));
-});
-
 const deleteUserById = asyncHandler(async (req, res) => {
   const { id } = req.query;
 
@@ -104,14 +69,8 @@ const deleteUserById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "User deleted successfully"));
 });
 
-const fetchDepartments = asyncHandler(async (req, res, next) => {
-  res.status(200).json(new ApiResponse(200, DEPARTMENTS, "Departments found"));
-});
-
 export const userController = {
   registerUser,
   fetchAllUsers,
-  fetchAllMembers,
   deleteUserById,
-  fetchDepartments,
 };
