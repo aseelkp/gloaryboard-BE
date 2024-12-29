@@ -14,11 +14,10 @@ router.use(verifyJWT, verifyRole(["admin"]));
 
 
 // Register a new org 
-
-router.route("/register").post(adminController.registerOrg);
-
-
 router.route("/orgs").get(adminController.fetchAllOrgs);
+router.route("/orgs/register").post(adminController.registerOrg);
+router.route("/orgs/update/:id").patch(adminController.updateOrg);
+router.route("/orgs/delete/:id").delete(adminController.deleteOrg);
 
 
 // Event Type routes

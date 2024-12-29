@@ -38,7 +38,44 @@ const registerOrg = asyncHandler(async (req, res) => {
         .json(new ApiResponse(201, user, "User created successfully"));
 });
 
+const updateOrg = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { name, email, password, phoneNumber } = req.body;
+
+    const user = await Admin.findById(id);
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (password) user.password = password;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+
+    await user.save();
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "User updated successfully"));
+});
+
+const deleteOrg = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const user = await Admin.findByIdAndDelete(id);
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, null, "User deleted successfully"));
+});
+
 export const adminController = {
     fetchAllOrgs,
-    registerOrg
+    registerOrg,
+    updateOrg,
+    deleteOrg
 }
