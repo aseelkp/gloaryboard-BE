@@ -4,23 +4,37 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { DEPARTMENTS } from "../constants.js";
+import { userService } from "../services/user.service.js";
 
-const fetchAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}).select(
-    "-password -__v -created_at -updated_at"
-  );
 
-  if (!users) {
-    throw new ApiError(404, "No users found");
+const registerUser = asyncHandler(async (req, res) => {
+  const { name , gender , phoneNumber , course , semester , year, capId , dob } = req.body;
+
+  if ( !name || !gender || !phoneNumber || !course || !semester || !year || !capId || !dob ) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  if (!req.file) throw new ApiError(400, "Picture is required");
+
+  req.body.college = req.user.name;
+  req.body.image = req.file.path;
+
+  const user = await userService.registerUser(req);
+
+
+  if (!user) {
+    throw new ApiError(500, "Failed to create user");
   }
 
   return res
-    .status(200)
-    .json(new ApiResponse(200, users, "Users fetched successfully"));
-});
+    .status(201)
+    .json(new ApiResponse(201, user, "User created successfully"));
 
-const fetchAllReps = asyncHandler(async (req, res) => {
-  const users = await User.find({ user_type: "rep" }).select(
+})
+
+
+const fetchAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({}).select(
     "-password -__v -created_at -updated_at"
   );
 
@@ -95,8 +109,8 @@ const fetchDepartments = asyncHandler(async (req, res, next) => {
 });
 
 export const userController = {
+  registerUser,
   fetchAllUsers,
-  fetchAllReps,
   fetchAllMembers,
   deleteUserById,
   fetchDepartments,

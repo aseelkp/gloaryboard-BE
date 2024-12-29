@@ -5,13 +5,19 @@ import { eventTypeController } from "../controllers/eventType.controller.js";
 import { eventController } from "../controllers/event.controller.js";
 import { eventRegistrationController } from "../controllers/eventRegistration.controller.js";
 import { resultController } from "../controllers/result.controller.js";
+import { adminController } from "../controllers/admin.controller.js";
 
 const router = Router();
 
-router.use(verifyJWT, verifyRole(["admin", "rep"]));
+router.use(verifyJWT, verifyRole(["admin"]));
 
 
-router.route("/reps").get(userController.fetchAllReps);
+// Register a new org 
+
+router.route("/register").post(adminController.registerOrg);
+
+
+router.route("/orgs").get(adminController.fetchAllOrgs);
 
 
 // Event Type routes
