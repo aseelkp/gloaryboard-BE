@@ -25,10 +25,10 @@ const registerAdmin = asyncHandler(async (req, res) => {
 
 const updateUser = asyncHandler(async (req, res) => {
   const { id } = req.query;
-  const { name, number, department, year_of_study, gender } = req.body;
+  const { name, number, year_of_study, gender } = req.body;
 
   if (
-    [name, number, department, year_of_study].some(
+    [name, number, year_of_study].some(
       (field) => !field || field.trim() === ""
     )
   ) {
@@ -37,7 +37,7 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const user = await User.findByIdAndUpdate(
     id,
-    { $set: { gender, name, number, department, year_of_study } },
+    { $set: { gender, name, number, year_of_study } },
     { new: true }
   ).select("-password");
 
