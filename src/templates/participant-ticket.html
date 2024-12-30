@@ -10,6 +10,12 @@
         --primary-color: #857432;
         --dark-color: #dfdfdf;
       }
+      .no-border-bottom {
+        border-bottom: none !important;
+      }
+      .no-border-right {
+        border-right: none !important;
+      }
       body {
         font-family: Arial, sans-serif;
         margin: 30px;
@@ -54,11 +60,8 @@
         height: 100%;
       }
       .personal-details .details {
-        /* background-color: var(--dark-color);
-            padding: 5px; */
         display: flex;
         flex-direction: column;
-        /* gap: 5px; */
       }
       .details .single-line {
         display: flex;
@@ -71,9 +74,7 @@
       .personal-details .field label {
         font-weight: bold;
       }
-
       .programs-container {
-        /* background-color: var(--dark-color); */
         margin-top: 7px;
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
@@ -194,25 +195,25 @@
           </div>
         </div>
         <div class="details">
-          <div class="field">
+          <div class="field no-border-bottom">
             <label for="name">Name:</label>
             <span>{{name}}</span>
           </div>
           <div class="single-line">
-            <div class="field">
+            <div class="field no-border-bottom no-border-right">
               <label for="name">Reg ID:</label>
               <span>{{regId}}</span>
             </div>
-            <div class="field">
+            <div class="field no-border-bottom">
               <label for="name">Sex:</label>
               <span>{{sex}}</span>
             </div>
           </div>
-          <div class="field">
+          <div class="field no-border-bottom">
             <label for="name">College:</label><br />
             <span>{{college}}</span>
           </div>
-          <div class="field">
+          <div class="field no-border-bottom">
             <label for="name">Course:</label>
             <span>{{course}}</span>
           </div>
@@ -224,7 +225,7 @@
       </div>
 
       <div class="programs-container">
-        <div class="programs-wrapper">
+        <div class="programs-wrapper no-border-right">
           <div class="program-table-heading">Off Stage</div>
           <div class="program-table-body">
             {{#each programs.offStage}}
@@ -232,7 +233,7 @@
             {{/each}}
           </div>
         </div>
-        <div class="programs-wrapper">
+        <div class="programs-wrapper no-border-right">
           <div class="program-table-heading">Stage</div>
           <div class="program-table-body">
             {{#each programs.stage}}
