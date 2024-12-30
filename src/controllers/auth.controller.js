@@ -25,10 +25,10 @@ const registerAdmin = asyncHandler(async (req, res) => {
 
 const updateUser = asyncHandler(async (req, res) => {
   const { id } = req.query;
-  const { name, number, year_of_study, gender } = req.body;
+  const { name, phoneNumber, year_of_study, gender } = req.body;
 
   if (
-    [name, number, year_of_study].some(
+    [name, phoneNumber, year_of_study].some(
       (field) => !field || field.trim() === ""
     )
   ) {
