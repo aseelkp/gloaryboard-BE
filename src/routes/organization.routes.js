@@ -27,6 +27,7 @@ router.route("/event-registration/delete/:id").delete(eventRegistrationControlle
 
 // PDF export routes
 router.route("/participant-tickets").get(pdfExportController.getParticipantTickets);
+router.route("/ticket/:id").get(pdfExportController.getParticipantTicketById);
 
 
 // congigs 
