@@ -37,7 +37,7 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const user = await User.findByIdAndUpdate(
     id,
-    { $set: { gender, name, number, year_of_study } },
+    { $set: { gender, name, phoneNumber, year_of_study } },
     { new: true }
   ).select("-password");
 
