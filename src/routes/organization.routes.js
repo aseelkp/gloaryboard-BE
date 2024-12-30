@@ -6,6 +6,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 import { eventRegistrationController } from "../controllers/eventRegistration.controller.js";
 import { pdfExportController } from "../controllers/pdfExport.controller.js";
 import { appConfigController } from "../controllers/appConfig.controller.js";
+import { eventController } from "../controllers/event.controller.js";
 const router = Router();
 
 router.use(verifyJWT, verifyRole(["admin", "organization"]));
@@ -23,6 +24,9 @@ router.route("/event-registration/:id").get(eventRegistrationController.getEvent
 router.route("/event-registration/event/:id").get(eventRegistrationController.getEventRegistrationByEventId);
 router.route("/event-registration/update/:id").patch(eventRegistrationController.updateEventRegistration);
 router.route("/event-registration/delete/:id").delete(eventRegistrationController.deleteEventRegistration);
+
+// Event routes
+router.route("/events").get(eventController.fetchAllEvents);
 
 
 // PDF export routes
