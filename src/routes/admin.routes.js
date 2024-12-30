@@ -20,6 +20,9 @@ router.route("/orgs/register").post(adminController.registerOrg);
 router.route("/orgs/update/:id").patch(adminController.updateOrg);
 router.route("/orgs/delete/:id").delete(adminController.deleteOrg);
 
+// User routes
+router.route("/users").get(userController.fetchAllUsers);
+
 
 // Event Type routes
 router.route("/event-type").get(eventTypeController.fetchAllEventTypes);

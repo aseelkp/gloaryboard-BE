@@ -16,6 +16,7 @@ router.route("/register").post( upload.single('image'), userController.registerU
 router.route("/update").put(authController.updateUser);
 router.route("/me").get(authController.getCurrentUser);
 router.route("/delete/:id").delete(userController.deleteUserById);
+router.route("/users").get(userController.fetchUerCollege);
 
 // event registration routes
 router.route("/event-registration").get(eventRegistrationController.getAllEventRegistrations);
@@ -34,7 +35,7 @@ router.route("/participant-tickets").get(pdfExportController.getParticipantTicke
 router.route("/ticket/:id").get(pdfExportController.getParticipantTicketById);
 
 
-// congigs 
+// configs 
 router.route("/config").get(appConfigController.getConfigs);
 
 export default router;

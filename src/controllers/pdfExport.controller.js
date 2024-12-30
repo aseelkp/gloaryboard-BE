@@ -105,7 +105,7 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
   const eventRegistrations = await EventRegistration.find({
     "participants.user": user._id,
   }).populate("event");
-  console.log("here",eventRegistrations);
+
   const htmlTemplate = fs.readFileSync(
     "./src/templates/participant-ticket.html",
     "utf-8"
