@@ -53,9 +53,13 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
   const compiledTemplate = handlebars.compile(htmlTemplate);
 
   const browser = await puppeteer.launch({
-    executablePath: '/usr/bin/google-chrome',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    protocolTimeout: 30000,
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+    headless: 'new',
+    args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage'
+    ]
   });
   const pdfDoc = await PDFDocument.create();
   const copies = ["c-zone copy", "student copy"];
