@@ -131,7 +131,7 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const user = await User.findOne({ _id: id });
   if (!user) {
-    return next(ApiError(404, "User not found with the specified regId"));
+    return next(new ApiError(404, "User not found with the specified regId"));
   }
   
   const eventRegistrations = await EventRegistration.find({
