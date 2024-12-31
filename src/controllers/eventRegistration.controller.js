@@ -237,8 +237,7 @@ const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
   ]);
 
   if (!eventRegistrations.length) {
-    // 204 No Content
-    return next(new ApiError(204, "No event registrations found for the specified college"));
+    return res.status(200).json(new ApiResponse(200, [], "No event registrations found for the specified college"));
   }
 
   res
