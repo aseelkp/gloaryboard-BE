@@ -8,7 +8,7 @@ import { User } from "../models/user.models.js";
 import { DEPARTMENTS } from "../constants.js";
 
 const createEventRegistration = asyncHandler(async (req, res, next) => {
-  const { event, group_name, participants, helpers } = req.body;
+  const { event, group_name, participants , min_particpants } = req.body;
 
   if (!Array.isArray(participants) || participants.length === 0) {
     return next(new ApiError(400, "Participants must be a non-empty array"));
@@ -136,20 +136,12 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
     },
     { $unwind: "$event.event_type" },
     {
-      $lookup: {
-        from: "users",
-        localField: "helpers.user",
-        foreignField: "_id",
-        as: "helpers.user",
-      },
-    },
-    {
       $group: {
         _id: "$_id",
         event: { $first: "$event" },
         group_name: { $first: "$group_name" },
         participants: { $push: "$participants.user" },
-        helpers: { $first: "$helpers" },
+        college : { $first: "$participants.user.college" },
         score: { $first: "$score" },
         created_at: { $first: "$created_at" },
         updated_at: { $first: "$updated_at" },
@@ -162,11 +154,11 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
         updated_at: 0,
       },
     },
-  ]);
+    ]);
 
-  // if (!eventRegistrations.length) {
-  //   // 204 No Content
-  //   return next(new ApiError(204, "No event registrations found"));
+    // if (!eventRegistrations.length) {
+    //   // 204 No Content
+    //   return next(new ApiError(204, "No event registrations found"));
   // }
 
   res
@@ -223,6 +215,7 @@ const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
         group_name: { $first: "$group_name" },
         participants: { $push: "$participants.user" },
         score: { $first: "$score" },
+        college: { $first: "$participants.user.college" },
         created_at: { $first: "$created_at" },
         updated_at: { $first: "$updated_at" },
       },

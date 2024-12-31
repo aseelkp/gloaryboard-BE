@@ -51,4 +51,7 @@ router.route("/config/update/:id").patch(appConfigController.updateConfig);
 // event registration routes
 router.route("/event-registration").get(eventRegistrationController.getAllEventRegistrations);
 
+
+router.route("/result-categories").get(eventController.fetchResultCategories);
+
 export default router;
