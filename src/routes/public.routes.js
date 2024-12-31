@@ -6,7 +6,7 @@ import { resultController } from "../controllers/result.controller.js";
 
 const router = Router();
 
-router.route("/registerAdmin").post(authController.registerAdmin);
+// router.route("/registerAdmin").post(authController.registerAdmin);
 router.route("/login").post(authController.loginUser);
 
 router.route("/events").get(eventController.fetchAllEvents);
