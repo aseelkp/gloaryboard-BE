@@ -9,11 +9,6 @@ const eventRegistrationSchema = new Schema(
         user: { type: Schema.Types.ObjectId, ref: "User", required: true },
       },
     ],
-    helpers: [
-      {
-        user: { type: Schema.Types.ObjectId, ref: "User" },
-      },
-    ], // Users who helped in organizing
     score: { type: Number, default: 0 }, // Score obtained in this event by the user
   },
   {
