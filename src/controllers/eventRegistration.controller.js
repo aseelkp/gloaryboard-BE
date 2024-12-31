@@ -210,8 +210,8 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
       new ApiResponse(200, eventRegistrations, "Event registrations found")
     );
 });
-// Get all event college registrations
 
+// Get all event college registrations
 const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
   const college = req.user.name; // Accept college as a query parameter
   if (!college) {

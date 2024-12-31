@@ -10,6 +10,12 @@
         --primary-color: #857432;
         --dark-color: #dfdfdf;
       }
+      .no-border-bottom {
+        border-bottom: none !important;
+      }
+      .no-border-right {
+        border-right: none !important;
+      }
       body {
         font-family: Arial, sans-serif;
         margin: 30px;
@@ -54,33 +60,28 @@
         height: 100%;
       }
       .personal-details .details {
-        /* background-color: var(--dark-color);
-            padding: 5px; */
         display: flex;
         flex-direction: column;
-        /* gap: 5px; */
       }
       .details .single-line {
         display: flex;
       }
       .personal-details .field {
-        outline: 1px solid #000;
+        border: 1px solid #000;
         padding: 5px;
         flex: 1;
       }
       .personal-details .field label {
         font-weight: bold;
       }
-
       .programs-container {
-        /* background-color: var(--dark-color); */
         margin-top: 7px;
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
       }
       .programs-wrapper {
         padding: 7px;
-        outline: 1px solid #000;
+        border: 1px solid #000;
       }
       .programs-wrapper .program-table-heading {
         background-color: var(--primary-color);
@@ -91,8 +92,7 @@
       }
       .programs-wrapper .program-table-body {
         padding: 10px;
-        background-color: #fff;
-        min-height: 320px;
+        height: 320px;
         text-align: left;
       }
       .program-table-body .prpogram {
@@ -100,8 +100,7 @@
         margin-bottom: 5px;
       }
       .signature-container {
-        margin-top: 10px;
-        margin-bottom: 60px;
+        margin-top: 60px;
         text-align: center;
         display: flex;
         justify-content: space-around;
@@ -194,25 +193,25 @@
           </div>
         </div>
         <div class="details">
-          <div class="field">
+          <div class="field no-border-bottom">
             <label for="name">Name:</label>
             <span>{{name}}</span>
           </div>
           <div class="single-line">
-            <div class="field">
+            <div class="field no-border-bottom no-border-right">
               <label for="name">Reg ID:</label>
               <span>{{regId}}</span>
             </div>
-            <div class="field">
+            <div class="field no-border-bottom">
               <label for="name">Sex:</label>
               <span>{{sex}}</span>
             </div>
           </div>
-          <div class="field">
+          <div class="field no-border-bottom">
             <label for="name">College:</label><br />
             <span>{{college}}</span>
           </div>
-          <div class="field">
+          <div class="field no-border-bottom">
             <label for="name">Course:</label>
             <span>{{course}}</span>
           </div>
@@ -224,7 +223,7 @@
       </div>
 
       <div class="programs-container">
-        <div class="programs-wrapper">
+        <div class="programs-wrapper no-border-right">
           <div class="program-table-heading">Off Stage</div>
           <div class="program-table-body">
             {{#each programs.offStage}}
@@ -232,7 +231,7 @@
             {{/each}}
           </div>
         </div>
-        <div class="programs-wrapper">
+        <div class="programs-wrapper no-border-right">
           <div class="program-table-heading">Stage</div>
           <div class="program-table-body">
             {{#each programs.stage}}
