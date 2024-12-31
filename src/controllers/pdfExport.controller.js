@@ -9,6 +9,14 @@ import { ApiError } from "../utils/ApiError.js";
 
 const copies = ["c-zone copy", "student copy"];
 
+function chunkArray(array, chunkSize = 14) {
+  const chunks = [];
+  for (let i = 0; i < array?.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
 const getParticipantTickets = asyncHandler(async (req, res, next) => {
   const collegeName = req.user.name;
 
@@ -39,15 +47,15 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
         dateOfBirth: new Date(user.dob).toLocaleDateString(),
         image: user.image,
         programs: {
-          offStage: eventRegistrations
+          offStage: chunkArray(eventRegistrations
             .filter((reg) => !reg.event.is_onstage)
-            .map((reg) => reg.event.name),
-          stage: eventRegistrations
+            .map((reg) => reg.event.name)),
+          stage: chunkArray(eventRegistrations
             .filter((reg) => reg.event.is_onstage && !reg.event.is_group)
-            .map((reg) => reg.event.name),
-          group: eventRegistrations
+            .map((reg) => reg.event.name)),
+          group: chunkArray(eventRegistrations
             .filter((reg) => reg.event.is_group)
-            .map((reg) => reg.event.name),
+            .map((reg) => reg.event.name)),
         },
       };
     })
@@ -78,20 +86,32 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
   const pdfDoc = await PDFDocument.create();
 
   for (const user of filteredUsers) {
+		const noOfPages = Math.max(user.programs?.offStage?.length, user.programs?.stage?.length) || 1;
+    
     for (const copy of copies) {
-      const page = await browser.newPage();
-
-      // Populate HTML with user data
-      const userHTML = compiledTemplate({ ...user, copy });
-      await page.setContent(userHTML);
-
-      // Generate the PDF for this user
-      const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
-      const userPdfDoc = await PDFDocument.load(pdfBuffer);
-      const [userPage] = await pdfDoc.copyPages(userPdfDoc, [0]);
-      pdfDoc.addPage(userPage);
-
-      await page.close();
+			for (let i = 0; i < noOfPages; i++) {
+				const page = await browser.newPage();
+				const data = {
+					...user,
+					copy,
+					programs: {
+						offStage: user.programs?.offStage[i],
+						stage: user.programs?.stage[i],
+						group: user.programs?.group[i],
+					}
+				};
+				// Populate HTML with user data
+				const userHTML = compiledTemplate(data);
+				await page.setContent(userHTML);
+				
+				// Generate the PDF for this user
+				const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+				const userPdfDoc = await PDFDocument.load(pdfBuffer);
+				const [userPage] = await pdfDoc.copyPages(userPdfDoc, [0]);
+				pdfDoc.addPage(userPage);
+				
+				await page.close();
+			}
     }
   }
 
@@ -111,7 +131,7 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const user = await User.findOne({ _id: id });
   if (!user) {
-    return next(ApiError(404, "User not found with the specified regId"));
+    return next(new ApiError(404, "User not found with the specified regId"));
   }
   
   const eventRegistrations = await EventRegistration.find({
@@ -139,41 +159,48 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
   });
   const pdfDoc = await PDFDocument.create();
 
+  const offStageChunks = chunkArray(eventRegistrations
+    .filter((reg) => !reg.event.is_onstage)
+    .map((reg) => reg.event.name));
+  const stageChunks = chunkArray(eventRegistrations
+    .filter((reg) => reg.event.is_onstage && !reg.event.is_group)
+    .map((reg) => reg.event.name));
+  const groupChunks = chunkArray(eventRegistrations
+    .filter((reg) => reg.event.is_group)
+    .map((reg) => reg.event.name));
+  const noOfPages = Math.max(offStageChunks.length, stageChunks.length) || 1;
+
   for (const copy of copies) {
-    const page = await browser.newPage();
+    for (let i = 0; i < noOfPages; i++) {
+      const page = await browser.newPage();
 
-    // Populate HTML with user data
-    const userHTML = compiledTemplate({
-      regId: user.userId,
-      name: user.name.toUpperCase(),
-      sex: user.gender,
-      zone: "C zone",
-      college: user.college,
-      course: user.course,
-      dateOfBirth: new Date(user.dob).toLocaleDateString(),
-      image: user.image,
-      programs: {
-        offStage: eventRegistrations
-          .filter((reg) => !reg.event.is_onstage)
-          .map((reg) => reg.event.name),
-        stage: eventRegistrations
-          .filter((reg) => reg.event.is_onstage && !reg.event.is_group)
-          .map((reg) => reg.event.name),
-        group: eventRegistrations
-          .filter((reg) => reg.event.is_group)
-          .map((reg) => reg.event.name),
-      },
-      copy,
-    });
-    await page.setContent(userHTML);
+      // Populate HTML with user data
+      const userHTML = compiledTemplate({
+        regId: user.userId,
+        name: user.name.toUpperCase(),
+        sex: user.gender,
+        zone: "C zone",
+        college: user.college,
+        course: user.course,
+        dateOfBirth: new Date(user.dob).toLocaleDateString(),
+        image: user.image,
+        programs: {
+          offStage: offStageChunks[i],
+          stage: stageChunks[i],
+          group: groupChunks[i],
+        },
+        copy,
+      });
+      await page.setContent(userHTML);
 
-    // Generate the PDF for this user
-    const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
-    const userPdfDoc = await PDFDocument.load(pdfBuffer);
-    const [userPage] = await pdfDoc.copyPages(userPdfDoc, [0]);
-    pdfDoc.addPage(userPage);
+      // Generate the PDF for this user
+      const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+      const userPdfDoc = await PDFDocument.load(pdfBuffer);
+      const [userPage] = await pdfDoc.copyPages(userPdfDoc, [0]);
+      pdfDoc.addPage(userPage);
 
-    await page.close();
+      await page.close();
+    }
   }
 
   await browser.close();
