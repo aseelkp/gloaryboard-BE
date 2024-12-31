@@ -3,6 +3,7 @@ import { Admin } from "../models/admin.model.js";
 import { authServices } from "../services/auth.service.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
+import { adminService } from "../services/admin.service.js";
 
 
 const fetchAllOrgs = asyncHandler(async (req, res) => {
@@ -76,9 +77,13 @@ const updateOrg = asyncHandler(async (req, res) => {
 const deleteOrg = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const user = await Admin.findByIdAndDelete(id);
+    if (!id) {
+        throw new ApiError(400, "Id is required");
+    }
 
-    if (!user) {
+    const org = await adminService.deleteOrg(id);
+
+    if (!org) {
         throw new ApiError(404, "User not found");
     }
 
