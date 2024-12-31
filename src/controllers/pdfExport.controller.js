@@ -15,7 +15,7 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
   // Fetch users from the specified college
   const users = await User.find({ college: collegeName });
   if (!users || users.length === 0) {
-    throw new ApiError(404, "No users found for the specified college");
+    return next(new ApiError(404, "No users found for the specified college"));
   }
 
   // Fetch related data from the EventRegistration collection for each user
@@ -24,6 +24,10 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
       const eventRegistrations = await EventRegistration.find({
         "participants.user": user._id,
       }).populate("event");
+
+      if (eventRegistrations.length === 0) {
+        return null;
+      }
 
       return {
         regId: user.userId,
@@ -49,6 +53,13 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
     })
   );
 
+  // Filter out users who don't have any event registrations
+  const filteredUsers = transformedUsers.filter((user) => user !== null);
+
+  if (filteredUsers.length === 0) {
+    return next(new ApiError(404, "No valid registrations found"));
+  }
+
   const htmlTemplate = fs.readFileSync(
     "./src/templates/participant-ticket.html",
     "utf-8"
@@ -66,7 +77,7 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
   });
   const pdfDoc = await PDFDocument.create();
 
-  for (const user of transformedUsers) {
+  for (const user of filteredUsers) {
     for (const copy of copies) {
       const page = await browser.newPage();
 
@@ -100,13 +111,17 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const user = await User.findOne({ _id: id });
   if (!user) {
-    throw new ApiError(404, "User not found with the specified regId");
+    return next(ApiError(404, "User not found with the specified regId"));
   }
   
   const eventRegistrations = await EventRegistration.find({
     "participants.user": user._id,
   }).populate("event");
-  console.log("here",eventRegistrations);
+
+  if (eventRegistrations.length === 0) {
+    return next(new ApiError(404, "No registrations found for the user"));
+  }
+
   const htmlTemplate = fs.readFileSync(
     "./src/templates/participant-ticket.html",
     "utf-8"
