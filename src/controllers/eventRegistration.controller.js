@@ -136,20 +136,11 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
     },
     { $unwind: "$event.event_type" },
     {
-      $lookup: {
-        from: "users",
-        localField: "helpers.user",
-        foreignField: "_id",
-        as: "helpers.user",
-      },
-    },
-    {
       $group: {
         _id: "$_id",
         event: { $first: "$event" },
         group_name: { $first: "$group_name" },
         participants: { $push: "$participants.user" },
-        helpers: { $first: "$helpers" },
         score: { $first: "$score" },
         created_at: { $first: "$created_at" },
         updated_at: { $first: "$updated_at" },
@@ -175,8 +166,8 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
       new ApiResponse(200, eventRegistrations, "Event registrations found")
     );
 });
-// Get all event college registrations
 
+// Get all event college registrations
 const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
   const college = req.user.name; // Accept college as a query parameter
   if (!college) {
