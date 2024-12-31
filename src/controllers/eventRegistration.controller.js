@@ -18,8 +18,8 @@ const validateParticipationLimit = async (event, participants) => {
       "participants.user": { $in: await User.find({ college }).select('_id') },
     });
 
-    if (groupRegistrations.length + participants.length > 1) {
-      throw new ApiError(400, "Only one group participation allowed per college");
+    if (groupRegistrations.length > 0) {
+    throw new ApiError(400, "Only one group participation allowed per college");
     }
   } else {
     const individualRegistrations = await EventRegistration.find({
