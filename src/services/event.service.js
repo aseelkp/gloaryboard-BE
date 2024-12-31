@@ -1,4 +1,5 @@
 import { Event } from "../models/event.models.js";
+import { ApiError } from "../utils/ApiError.js";
 
 const createEvent = async (data) => {
   try {

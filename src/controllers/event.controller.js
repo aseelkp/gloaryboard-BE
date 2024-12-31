@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Result } from "../models/result.models.js";
 import { EventRegistration } from "../models/eventRegistration.models.js";
 import { eventServices } from "../services/event.service.js";
+import { RESULT_CATEGORIES } from "../constants.js";
 
 const fetchAllEvents = asyncHandler(async (req, res, next) => {
   const events = await Event.find()
@@ -119,10 +120,19 @@ const deleteEvent = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, {}, "Event deleted successfully"));
 });
 
+
+const fetchResultCategories = asyncHandler(async (req, res, next) => {
+
+   return res
+    .status(200)
+    .json(new ApiResponse(200, RESULT_CATEGORIES, "Result categories fetched successfully"));
+});
+
 export const eventController = {
   fetchAllEvents,
   fetchResultPublishedEvents,
   createEvent,
   updateEvent,
   deleteEvent,
+  fetchResultCategories,
 };
