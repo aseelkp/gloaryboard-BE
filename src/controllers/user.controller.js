@@ -20,6 +20,21 @@ const fetchAllUsers = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, users, "Users fetched successfully"));
 });
+
+const fetchUerCollege = asyncHandler(async (req, res) => {
+  const users = await User.find({ college: req.user.name }).select(
+    "-password -__v -created_at -updated_at"
+  );
+
+  if (!users) {
+    throw new ApiError(404, "No users found for the specified college");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, users, "Users fetched successfully"));
+});
+
 const registerUser = asyncHandler(async (req, res) => {
   const { name , gender , phoneNumber , course , semester , year_of_study, capId , dob } = req.body;
 
@@ -69,8 +84,11 @@ const deleteUserById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "User deleted successfully"));
 });
 
+
+
 export const userController = {
   registerUser,
   fetchAllUsers,
   deleteUserById,
+  fetchUerCollege
 };

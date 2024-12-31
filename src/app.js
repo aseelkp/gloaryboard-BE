@@ -7,7 +7,7 @@ import publicRouter from './routes/public.routes.js'
 import organizationRouter from './routes/organization.routes.js'
 import adminRouter from './routes/admin.routes.js'
 import { errorHandler } from "./middlewares/error.middlewares.js";
-import { storageService } from "./services/storage.service.js";
+import logger from "./services/logger.service.js";
 
 
 dotenv.config({
@@ -15,6 +15,23 @@ dotenv.config({
 });
 
 const app = express();
+
+// Logging Middleware
+app.use((req, res, next) => {
+  const start = process.hrtime();
+
+  res.on("finish", () => {
+    const diff = process.hrtime(start);
+    const responseTime = (diff[0] * 1e3 + diff[1] * 1e-6).toFixed(2); // Convert to ms
+    const statusCode = res.statusCode;
+
+    logger.info(
+      `${req.method} ${req.originalUrl} ${statusCode} ${responseTime}ms`
+    );
+  });
+
+  next();
+});
 
 app.use(
   cors({

@@ -9,9 +9,6 @@ const router = Router();
 router.route("/registerAdmin").post(authController.registerAdmin);
 router.route("/login").post(authController.loginUser);
 
-router.route("/").get(userController.fetchAllUsers);
-
-
 router.route("/events").get(eventController.fetchAllEvents);
 router.route("/events/resultPublished").get(eventController.fetchResultPublishedEvents);
 

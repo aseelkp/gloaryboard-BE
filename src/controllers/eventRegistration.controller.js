@@ -175,6 +175,77 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
       new ApiResponse(200, eventRegistrations, "Event registrations found")
     );
 });
+// Get all event college registrations
+
+const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
+  const college = req.user.name; // Accept college as a query parameter
+  if (!college) {
+    throw new ApiError(400, "College is required");
+  }
+
+  const eventRegistrations = await EventRegistration.aggregate([
+    {
+      $lookup: {
+        from: "users", // Refers to the User collection
+        localField: "participants.user",
+        foreignField: "_id",
+        as: "participants.user",
+      },
+    },
+    { $unwind: "$participants.user" },
+    {
+      $match: {
+        "participants.user.college": college, // Match by college
+      },
+    },
+    {
+      $lookup: {
+        from: "events", // Refers to the Event collection
+        localField: "event",
+        foreignField: "_id",
+        as: "event",
+      },
+    },
+    { $unwind: "$event" },
+    {
+      $lookup: {
+        from: "eventtypes", // Refers to EventType collection
+        localField: "event.event_type",
+        foreignField: "_id",
+        as: "event.event_type",
+      },
+    },
+    { $unwind: "$event.event_type" },
+    {
+      $group: {
+        _id: "$_id",
+        event: { $first: "$event" },
+        group_name: { $first: "$group_name" },
+        participants: { $push: "$participants.user" },
+        score: { $first: "$score" },
+        created_at: { $first: "$created_at" },
+        updated_at: { $first: "$updated_at" },
+      },
+    },
+    {
+      $project: {
+        __v: 0,
+        created_at: 0,
+        updated_at: 0,
+      },
+    },
+  ]);
+
+  if (!eventRegistrations.length) {
+    return res.status(200).json(new ApiResponse(200, [], "No event registrations found for the specified college"));
+  }
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, eventRegistrations, "Event registrations found")
+    );
+});
 
 const getEventRegistrationByEventId = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
@@ -311,4 +382,5 @@ export const eventRegistrationController = {
   getEventRegistrationByEventId,
   updateEventRegistration,
   deleteEventRegistration,
+  getAllEventRegistrationsCollege
 };
