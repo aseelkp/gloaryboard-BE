@@ -141,7 +141,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 				// Draw all personal details fields
 				const detailsWidth = pageWidth - detailsStartX - margin - 10;
 				drawField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
-				drawField('Reg ID:', user.userId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
+				drawField('Reg ID:', user.regId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawFieldWithTwoLines('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth);
 				drawField('Course:', user.course, detailsStartX, detailsStartY - 4 * fieldHeight, detailsWidth);
