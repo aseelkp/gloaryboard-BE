@@ -11,6 +11,7 @@ function chunkArray(array, chunkSize = 14) {
   }
   return chunks;
 }
+const copy = ["C-Zone Copy", "Student Copy"];
 
 const getParticipantTickets = asyncHandler(async (req, res, next) => {
   const collegeName = req.user.name;
@@ -41,6 +42,7 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
         course: user.course,
         dateOfBirth: new Date(user.dob).toLocaleDateString(),
         image: user.image,
+        semester: user.semester.toString(),
         programs: {
           offStage: chunkArray(eventRegistrations
             .filter((reg) => !reg.event.is_onstage)
@@ -96,6 +98,7 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
     course: user.course,
     dateOfBirth: new Date(user.dob).toLocaleDateString(),
     image: user.image,
+    semester: user.semester.toString(),
     programs: {
       offStage: chunkArray(eventRegistrations
         .filter((reg) => !reg.event.is_onstage)
