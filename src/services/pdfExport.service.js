@@ -71,26 +71,16 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 				});
 
 				// Personal Details Section
-				const detailsStartX = margin + 160; // After photo space
+				const detailsStartX = margin + 135.2; // After photo space
 				const detailsStartY = ticketY - 10;
-
-				// Photo placeholder
-				page.drawRectangle({
-					x: margin + 10,
-					y: ticketY - 154,
-					width: 140,
-					height: 144,
-					borderColor: rgb(0, 0, 0),
-					borderWidth: 1
-				});
 
 				// Draw photo
 				if (image) {
 					page.drawImage(image, {
-						x: margin + 11,
-						y: ticketY - 153,
-						width: 138,
-						height: 142
+						x: margin + 10,
+						y: ticketY - 154,
+						width: 115.2,
+						height: 144
 					});
 				}
 
