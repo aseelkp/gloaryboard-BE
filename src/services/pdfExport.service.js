@@ -45,7 +45,6 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 				});
 
 				// Draw main ticket container
-				// const ticketY = pageHeight - margin - 100;
 				page.drawRectangle({
 					x: margin,
 					y: ticketY - 400,
@@ -57,25 +56,28 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 
 				// Personal Details Section
 				const detailsStartX = margin + 160; // After photo space
-				const detailsStartY = ticketY - 30;
+				const detailsStartY = ticketY - 10;
 
 				// Photo placeholder
 				page.drawRectangle({
 					x: margin + 10,
-					y: ticketY - 180,
+					y: ticketY - 154,
 					width: 140,
-					height: 160,
+					height: 144,
 					borderColor: rgb(0, 0, 0),
 					borderWidth: 1
 				});
 
 				// Draw personal details
+				const fieldHeight = 24;
 				const drawField = (label, value, x, y, width) => {
+					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
+					
 					page.drawRectangle({
 						x,
-						y: y - 25,
+						y: y - fieldHeight,
 						width,
-						height: 25,
+						height: fieldHeight,
 						borderColor: rgb(0, 0, 0),
 						borderWidth: 1
 					});
@@ -84,25 +86,50 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 						x: x + 5,
 						y: y - 15,
 						font: helveticaBold,
-						size: 10
+						size: 14
+					});
+
+
+					page.drawText(value || '', {
+						x: x + 10 + labelWidth,
+						y: y - 15,
+						font: helvetica,
+						size: 14
+					});
+				};
+				const drawFieldWithTwoLines = (label, value, x, y, width) => {
+					page.drawRectangle({
+						x,
+						y: y - 2 * fieldHeight,
+						width,
+						height: 2 * fieldHeight,
+						borderColor: rgb(0, 0, 0),
+						borderWidth: 1
+					});
+					
+					page.drawText(label, {
+						x: x + 5,
+						y: y - 17,
+						font: helveticaBold,
+						size: 14
 					});
 
 					page.drawText(value || '', {
 						x: x + 5,
-						y: y - 22,
+						y: y - 35,
 						font: helvetica,
-						size: 10
+						size: 14
 					});
 				};
 
 				// Draw all personal details fields
 				const detailsWidth = pageWidth - detailsStartX - margin - 10;
 				drawField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
-				drawField('Reg ID:', user.regId, detailsStartX, detailsStartY - 30, detailsWidth / 2);
-				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - 30, detailsWidth / 2);
-				drawField('College:', user.college, detailsStartX, detailsStartY - 60, detailsWidth);
-				drawField('Course:', user.course, detailsStartX, detailsStartY - 90, detailsWidth);
-				drawField('Date of Birth:', user.dateOfBirth, detailsStartX, detailsStartY - 120, detailsWidth);
+				drawField('Reg ID:', user.regId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
+				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - fieldHeight, detailsWidth / 2);
+				drawFieldWithTwoLines('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth);
+				drawField('Course:', user.course, detailsStartX, detailsStartY - 4*fieldHeight, detailsWidth);
+				drawField('Date of Birth:', user.dateOfBirth, detailsStartX, detailsStartY - 5*fieldHeight, detailsWidth);
 
 				// Programs Section
 				const programsY = ticketY - 200;
