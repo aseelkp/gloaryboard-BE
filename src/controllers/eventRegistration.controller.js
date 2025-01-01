@@ -7,8 +7,52 @@ import { Result } from "../models/result.models.js";
 import { User } from "../models/user.models.js";
 import { DEPARTMENTS } from "../constants.js";
 
+const validateParticipationLimit = async (event, participants) => {
+  const eventDetails = await Event.findById(event).populate("event_type");
+  const is_group = eventDetails.event_type.is_group;
+  const college = (await User.findById(participants[0].user)).college;
+
+  if (is_group) {
+    const groupRegistrations = await EventRegistration.find({
+      event,
+      "participants.user": { $in: await User.find({ college }).select('_id') },
+    });
+
+    if (groupRegistrations.length > 0) {
+    throw new ApiError(400, "Only one group participation allowed per college");
+    }
+  } else {
+    const individualRegistrations = await EventRegistration.find({
+      event,
+      "participants.user": { $in: await User.find({ college }).select('_id') },
+    });
+
+    if (individualRegistrations.length + participants.length > 2) {
+      throw new ApiError(400, "Only two individual participations allowed per college");
+    }
+
+    for (const participant of participants) {
+      const onstageRegistrations = await EventRegistration.find({
+        "participants.user": participant.user
+      }).populate({
+        path: 'event',
+        populate: {
+          path: 'event_type',
+          match: { is_onstage: true }
+        }
+      }).exec();
+
+      const filteredOnstageRegistrations = onstageRegistrations.filter(reg => reg.event.event_type);
+
+      if (onstageRegistrations.length > 4) {
+        throw new ApiError(400, `Participant ${participant.user} has reached the limit of 4 onstage individual items`);
+      }
+    }
+  }
+};
+
 const createEventRegistration = asyncHandler(async (req, res, next) => {
-  const { event, group_name, participants, helpers } = req.body;
+  const { event, group_name, participants } = req.body;
 
   if (!Array.isArray(participants) || participants.length === 0) {
     return next(new ApiError(400, "Participants must be a non-empty array"));
@@ -35,14 +79,15 @@ const createEventRegistration = asyncHandler(async (req, res, next) => {
     return next(new ApiError(409, "User already registered for this event"));
   }
 
+  await validateParticipationLimit(event, participants);
+
   const eventDetails = await Event.findById(event).populate("event_type");
   const is_group = eventDetails.event_type.is_group;
 
   if (is_group) {
     let departmentCategory;
-    participants.forEach(async (participant) => {
+    for (const participant of participants) {
       const user = await User.findById(participant.user);
-      // check the department category of the user with DEPARTMENTS constant
       const departmentGroup = Object.keys(DEPARTMENTS).find((group) =>
         DEPARTMENTS[group].includes(user.department)
       );
@@ -56,7 +101,7 @@ const createEventRegistration = asyncHandler(async (req, res, next) => {
         );
       }
       departmentCategory = departmentGroup;
-    });
+    }
   }
 
   let addedEvent;
@@ -66,7 +111,6 @@ const createEventRegistration = asyncHandler(async (req, res, next) => {
       event,
       group_name,
       participants,
-      helpers,
     });
   } else {
     addedEvent = [];
@@ -74,7 +118,6 @@ const createEventRegistration = asyncHandler(async (req, res, next) => {
       const individualEvent = await EventRegistration.create({
         event,
         participants: [participant],
-        helpers,
       });
       addedEvent.push(individualEvent);
     }
@@ -136,20 +179,12 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
     },
     { $unwind: "$event.event_type" },
     {
-      $lookup: {
-        from: "users",
-        localField: "helpers.user",
-        foreignField: "_id",
-        as: "helpers.user",
-      },
-    },
-    {
       $group: {
         _id: "$_id",
         event: { $first: "$event" },
         group_name: { $first: "$group_name" },
         participants: { $push: "$participants.user" },
-        helpers: { $first: "$helpers" },
+        college : { $first: "$participants.user.college" },
         score: { $first: "$score" },
         created_at: { $first: "$created_at" },
         updated_at: { $first: "$updated_at" },
@@ -162,11 +197,11 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
         updated_at: 0,
       },
     },
-  ]);
+    ]);
 
-  // if (!eventRegistrations.length) {
-  //   // 204 No Content
-  //   return next(new ApiError(204, "No event registrations found"));
+    // if (!eventRegistrations.length) {
+    //   // 204 No Content
+    //   return next(new ApiError(204, "No event registrations found"));
   // }
 
   res
@@ -175,8 +210,8 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
       new ApiResponse(200, eventRegistrations, "Event registrations found")
     );
 });
-// Get all event college registrations
 
+// Get all event college registrations
 const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
   const college = req.user.name; // Accept college as a query parameter
   if (!college) {
@@ -223,6 +258,7 @@ const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
         group_name: { $first: "$group_name" },
         participants: { $push: "$participants.user" },
         score: { $first: "$score" },
+        college: { $first: "$participants.user.college" },
         created_at: { $first: "$created_at" },
         updated_at: { $first: "$updated_at" },
       },
@@ -260,7 +296,6 @@ const getEventRegistrationByEventId = asyncHandler(async (req, res, next) => {
       },
     })
     .populate("participants.user", "name number department year_of_study")
-    .populate("helpers.user", "name")
     .select("-__v -created_at -updated_at");
 
   // if (!eventRegistration) {
@@ -286,7 +321,6 @@ const getEventRegistrationById = asyncHandler(async (req, res, next) => {
       },
     })
     .populate("participants.user", "name number department year_of_study")
-    .populate("helpers.user", "name")
     .select("-__v -created_at -updated_at");
 
   // if (!eventRegistration) {
@@ -303,11 +337,11 @@ const getEventRegistrationById = asyncHandler(async (req, res, next) => {
 const updateEventRegistration = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const { event, group_name, participants, helpers } = req.body;
+  const { event, group_name, participants } = req.body;
 
   const updateEvent = await EventRegistration.findByIdAndUpdate(
     id,
-    { event, group_name, participants, helpers },
+    { event, group_name, participants },
     { new: true }
   );
 

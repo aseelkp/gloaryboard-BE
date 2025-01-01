@@ -7,3 +7,5 @@ export const POSITIONS = {
 };
 
 export const DEPARTMENTS = [];
+
+export const RESULT_CATEGORIES = ["chithrolsavam" , "saahithyolsavam"];
