@@ -63,9 +63,9 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 				// Draw main ticket container
 				page.drawRectangle({
 					x: margin,
-					y: ticketY - 445,
+					y: ticketY - 455,
 					width: pageWidth - 2 * margin,
-					height: 445,
+					height: 455,
 					borderColor: rgb(0, 0, 0),
 					borderWidth: 1
 				});
@@ -152,22 +152,28 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					// Content area
 					page.drawRectangle({
 						x,
-						y: y - 250,
+						y: y - 260,
 						width: programWidth,
-						height: 275,
+						height: 285,
 						borderColor: rgb(0, 0, 0),
 						borderWidth: 1
 					});
 
 					// Draw programs
 					const currentPrograms = programs?.[pageIndex] || [];
+					
+					page.moveTo(x, y - 15);
 					currentPrograms.forEach((program, index) => {
+						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(program, 12) / (programWidth - 10));
+						
 						page.drawText(program, {
 							x: x + 5,
-							y: y - 15 - (index * 17),
 							font: helvetica,
-							size: 12
+							size: 12,
+							lineHeight: 17,
+							maxWidth: programWidth - 10,
 						});
+						page.moveDown(noOfLines * 17);
 					});
 				};
 
@@ -201,7 +207,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					size: 12
 				});
 
-				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before the 13th January:', {
+				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before 13th January:', {
 					x: margin,
 					y: footerY - 20,
 					maxWidth: pageWidth - 2 * margin,
