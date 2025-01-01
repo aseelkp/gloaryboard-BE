@@ -238,13 +238,6 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					font: helvetica,
 					size: 10
 				});
-
-				page.drawText('• A copy of your Hall Ticket or College ID Card.', {
-					x: margin,
-					y: footerY - 50,
-					font: helvetica,
-					size: 10
-				});
 			}
 		}
 	}
