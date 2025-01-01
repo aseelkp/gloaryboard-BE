@@ -1,7 +1,7 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fs from 'fs';
 
-export const generateParticipantTickets = async (users, copies = ["c-zone copy", "student copy"]) => {
+export const generateParticipantTickets = async (users, copies = ["C-Zone Copy", "Student Copy"]) => {
 	// Create a new PDF document
 	const pdfDoc = await PDFDocument.create();
 
@@ -24,6 +24,22 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 	for (const user of users) {
 		// Calculate number of pages needed based on program lists
 		const noOfPages = Math.max(user.programs?.offStage?.length, user.programs?.stage?.length) || 1;
+		let image;
+		if (user.image) {
+			console.log(user.image);
+
+			if (user.image.endsWith('.png')) {
+				const pngImageBytes = await fetch(user.image).then((res) => res.arrayBuffer());
+				image = await pdfDoc.embedPng(pngImageBytes);
+			} else if (user.image.endsWith('.jpg') || user.image.endsWith('.jpeg')) {
+				const jpgImageBytes = await fetch(user.image).then((res) => res.arrayBuffer());
+				image = await pdfDoc.embedJpg(jpgImageBytes);
+			} else {
+				throw new Error('Unsupported image format');
+			}
+		} else {
+			image = null;
+		}
 
 		for (const copy of copies) {
 			for (let pageIndex = 0; pageIndex < noOfPages; pageIndex++) {
@@ -38,7 +54,7 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 				});
 
 				// Header text
-				page.drawText(`(${copy})`, {
+				page.drawText(`( ${copy} )`, {
 					x: pageWidth / 2 - 50,
 					y: pageHeight - margin - headerImageHeight - 3,
 					size: 14
@@ -68,11 +84,21 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 					borderWidth: 1
 				});
 
+				// Draw photo
+				if (image) {
+					page.drawImage(image, {
+						x: margin + 11,
+						y: ticketY - 153,
+						width: 138,
+						height: 142
+					});
+				}
+
 				// Draw personal details
 				const fieldHeight = 24;
 				const drawField = (label, value, x, y, width) => {
 					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
-					
+
 					page.drawRectangle({
 						x,
 						y: y - fieldHeight,
@@ -106,7 +132,7 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 						borderColor: rgb(0, 0, 0),
 						borderWidth: 1
 					});
-					
+
 					page.drawText(label, {
 						x: x + 5,
 						y: y - 17,
@@ -125,12 +151,12 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 				// Draw all personal details fields
 				const detailsWidth = pageWidth - detailsStartX - margin - 10;
 				drawField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
-				drawField('Reg ID:', user.regId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
+				drawField('Reg ID:', user.userId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawFieldWithTwoLines('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth);
-				drawField('Course:', user.course, detailsStartX, detailsStartY - 4*fieldHeight, detailsWidth);
-				drawField('Semester:', user.semester, detailsStartX, detailsStartY - 5*fieldHeight, detailsWidth/2);
-				drawField('Date of Birth:', user.dateOfBirth, detailsStartX + detailsWidth / 2, detailsStartY - 5*fieldHeight, detailsWidth/2);
+				drawField('Course:', user.course, detailsStartX, detailsStartY - 4 * fieldHeight, detailsWidth);
+				drawField('Semester:', user.semester, detailsStartX, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
+				drawField('Date of Birth:', user.dateOfBirth, detailsStartX + detailsWidth / 2, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
 
 				// Programs Section
 				const programsY = ticketY - 190;
@@ -146,7 +172,7 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 						height: 25,
 						color: primaryColor
 					});
-					
+
 					const titleWidth = helveticaBold.widthOfTextAtSize(title, 12);
 					page.drawText(title, {
 						x: x + programWidth / 2 - titleWidth / 2,
@@ -184,23 +210,23 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 				drawProgramSection('Group', user.programs.group, margin + 2 * (programWidth) + 15, programsY);
 
 				// Signature section
-				const signatureY = ticketY - 540;
+				const signatureY = ticketY - 535;
 				page.drawText('Principal Signature & Seal', {
-					x: margin + 50,
+					x: margin + 5,
 					y: signatureY,
 					font: helvetica,
 					size: 12
 				});
 
-				page.drawText('UUC', {
-					x: pageWidth - margin - 100,
+				page.drawText('University Union Councillor (UUC)', {
+					x: pageWidth - margin - 186,
 					y: signatureY,
 					font: helvetica,
 					size: 12
 				});
 
 				// Footer notes
-				const footerY = margin + 40;
+				const footerY = margin + 50;
 				page.drawText('Notes:', {
 					x: margin,
 					y: footerY,
@@ -208,16 +234,24 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 					size: 12
 				});
 
-				page.drawText('• Submit the C Zone copy along with the copies of the documents mentioned below  program office before the 13th.', {
+				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before the 13th January:', {
 					x: margin,
 					y: footerY - 20,
+					maxWidth: pageWidth - 2 * margin,
 					font: helvetica,
 					size: 10
 				});
 
-				page.drawText('• Copy of your SSLC Book, Hall Ticket or College ID Card.', {
+				page.drawText('• A copy of your SSLC Book.', {
 					x: margin,
 					y: footerY - 35,
+					font: helvetica,
+					size: 10
+				});
+
+				page.drawText('• A copy of your Hall Ticket or College ID Card.', {
+					x: margin,
+					y: footerY - 50,
 					font: helvetica,
 					size: 10
 				});
