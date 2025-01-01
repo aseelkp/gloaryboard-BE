@@ -47,9 +47,9 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 				// Draw main ticket container
 				page.drawRectangle({
 					x: margin,
-					y: ticketY - 400,
+					y: ticketY - 445,
 					width: pageWidth - 2 * margin,
-					height: 400,
+					height: 445,
 					borderColor: rgb(0, 0, 0),
 					borderWidth: 1
 				});
@@ -129,10 +129,11 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawFieldWithTwoLines('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth);
 				drawField('Course:', user.course, detailsStartX, detailsStartY - 4*fieldHeight, detailsWidth);
-				drawField('Date of Birth:', user.dateOfBirth, detailsStartX, detailsStartY - 5*fieldHeight, detailsWidth);
+				drawField('Semester:', user.semester, detailsStartX, detailsStartY - 5*fieldHeight, detailsWidth/2);
+				drawField('Date of Birth:', user.dateOfBirth, detailsStartX + detailsWidth / 2, detailsStartY - 5*fieldHeight, detailsWidth/2);
 
 				// Programs Section
-				const programsY = ticketY - 200;
+				const programsY = ticketY - 190;
 				const programWidth = (pageWidth - 2 * margin - 20) / 3;
 
 				// Function to draw program section
@@ -145,9 +146,10 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 						height: 25,
 						color: primaryColor
 					});
-
+					
+					const titleWidth = helveticaBold.widthOfTextAtSize(title, 12);
 					page.drawText(title, {
-						x: x + programWidth / 2 - 20,
+						x: x + programWidth / 2 - titleWidth / 2,
 						y: y + 8,
 						font: helveticaBold,
 						size: 12,
@@ -157,9 +159,9 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 					// Content area
 					page.drawRectangle({
 						x,
-						y: y - 180,
+						y: y - 250,
 						width: programWidth,
-						height: 180,
+						height: 275,
 						borderColor: rgb(0, 0, 0),
 						borderWidth: 1
 					});
@@ -169,20 +171,20 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 					currentPrograms.forEach((program, index) => {
 						page.drawText(program, {
 							x: x + 5,
-							y: y - 20 - (index * 15),
+							y: y - 15 - (index * 17),
 							font: helvetica,
-							size: 10
+							size: 12
 						});
 					});
 				};
 
 				// Draw all program sections
-				drawProgramSection('Off Stage', user.programs.offStage, margin, programsY);
+				drawProgramSection('Off Stage', user.programs.offStage, margin + 5, programsY);
 				drawProgramSection('Stage', user.programs.stage, margin + programWidth + 10, programsY);
-				drawProgramSection('Group', user.programs.group, margin + 2 * (programWidth + 10), programsY);
+				drawProgramSection('Group', user.programs.group, margin + 2 * (programWidth) + 15, programsY);
 
 				// Signature section
-				const signatureY = ticketY - 500;
+				const signatureY = ticketY - 540;
 				page.drawText('Principal Signature & Seal', {
 					x: margin + 50,
 					y: signatureY,
@@ -198,7 +200,7 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 				});
 
 				// Footer notes
-				const footerY = margin + 50;
+				const footerY = margin + 40;
 				page.drawText('Notes:', {
 					x: margin,
 					y: footerY,
@@ -206,16 +208,16 @@ export const generateParticipantTickets = async (users, copies = ["c-zone copy",
 					size: 12
 				});
 
-				page.drawText('• Participants should bring their college ID card.', {
+				page.drawText('• Submit the C Zone copy along with the copies of the documents mentioned below  program office before the 13th.', {
 					x: margin,
 					y: footerY - 20,
 					font: helvetica,
 					size: 10
 				});
 
-				page.drawText('• Participants should report at the venue 30 minutes before the event.', {
+				page.drawText('• Copy of your SSLC Book, Hall Ticket or College ID Card.', {
 					x: margin,
-					y: footerY - 40,
+					y: footerY - 35,
 					font: helvetica,
 					size: 10
 				});
