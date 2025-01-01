@@ -86,14 +86,14 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 
 				// Draw personal details
 				const fieldHeight = 24;
-				const drawField = (label, value, x, y, width) => {
+				const drawField = (label, value, x, y, width, containerHeight =  fieldHeight) => {
 					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
 
 					page.drawRectangle({
 						x,
-						y: y - fieldHeight,
+						y: y - containerHeight,
 						width,
-						height: fieldHeight,
+						height: containerHeight,
 						borderColor: rgb(0, 0, 0),
 						borderWidth: 1
 					});
@@ -104,46 +104,23 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 						font: helveticaBold,
 						size: 14
 					});
-
 
 					page.drawText(value || '', {
 						x: x + 10 + labelWidth,
 						y: y - 15,
 						font: helvetica,
-						size: 14
+						size: 14,
+						maxWidth: width - labelWidth - 15,
+						lineHeight: 20
 					});
 				};
-				const drawFieldWithTwoLines = (label, value, x, y, width) => {
-					page.drawRectangle({
-						x,
-						y: y - 2 * fieldHeight,
-						width,
-						height: 2 * fieldHeight,
-						borderColor: rgb(0, 0, 0),
-						borderWidth: 1
-					});
-
-					page.drawText(label, {
-						x: x + 5,
-						y: y - 17,
-						font: helveticaBold,
-						size: 14
-					});
-
-					page.drawText(value || '', {
-						x: x + 5,
-						y: y - 35,
-						font: helvetica,
-						size: 14
-					});
-				};
-
+				
 				// Draw all personal details fields
 				const detailsWidth = pageWidth - detailsStartX - margin - 10;
 				drawField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
 				drawField('Reg ID:', user.regId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - fieldHeight, detailsWidth / 2);
-				drawFieldWithTwoLines('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth);
+				drawField('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth, 2 * fieldHeight);
 				drawField('Course:', user.course, detailsStartX, detailsStartY - 4 * fieldHeight, detailsWidth);
 				drawField('Semester:', user.semester, detailsStartX, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
 				drawField('Date of Birth:', user.dateOfBirth, detailsStartX + detailsWidth / 2, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
