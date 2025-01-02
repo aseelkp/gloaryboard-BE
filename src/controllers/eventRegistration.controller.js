@@ -40,7 +40,7 @@ const validateParticipationLimit = async (event, participants) => {
           path: 'event',
           populate: {
             path: 'event_type',
-            match: { is_onstage: true }
+            match: { is_onstage: true, is_group: false }
           }
         }).exec();
   
