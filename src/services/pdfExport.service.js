@@ -26,8 +26,6 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 		const noOfPages = Math.max(user.programs?.offStage?.length, user.programs?.stage?.length) || 1;
 		let image;
 		if (user.image) {
-			console.log(user.image);
-
 			if (user.image.endsWith('.png')) {
 				const pngImageBytes = await fetch(user.image).then((res) => res.arrayBuffer());
 				image = await pdfDoc.embedPng(pngImageBytes);
