@@ -26,8 +26,6 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 		const noOfPages = Math.max(user.programs?.offStage?.length, user.programs?.stage?.length) || 1;
 		let image;
 		if (user.image) {
-			console.log(user.image);
-
 			if (user.image.endsWith('.png')) {
 				const pngImageBytes = await fetch(user.image).then((res) => res.arrayBuffer());
 				image = await pdfDoc.embedPng(pngImageBytes);
@@ -164,9 +162,9 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					
 					page.moveTo(x, y - 15);
 					currentPrograms.forEach((program, index) => {
-						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(program, 12) / (programWidth - 10));
+						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program.replaceAll(" ", "S")}`, 12) / (programWidth - 10));
 						
-						page.drawText(program, {
+						page.drawText(`• ${program}`, {
 							x: x + 5,
 							font: helvetica,
 							size: 12,
