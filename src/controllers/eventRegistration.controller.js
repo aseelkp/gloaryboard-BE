@@ -47,7 +47,7 @@ const validateParticipationLimit = async (event, participants) => {
         const filteredOnstageRegistrations = onstageRegistrations.filter(reg => reg.event.event_type);
         
 
-        if (filteredOnstageRegistrations.length > 4) {
+        if (filteredOnstageRegistrations.length >= 4) {
           const participantName = (await User.findById(participant.user)).name;
           throw new ApiError(400, `${participantName} has reached the limit of 4 onstage individual items`);
         }
