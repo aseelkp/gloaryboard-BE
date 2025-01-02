@@ -339,6 +339,15 @@ const updateEventRegistration = asyncHandler(async (req, res, next) => {
 
   const { event, group_name, participants } = req.body;
 
+  if ( event ) {
+    const eventExists = await Event.findById(event);
+    if (!eventExists) {
+      return next(new ApiError(404, "Event not found"));
+    }
+    await validateParticipationLimit(event, participants);
+
+  }
+
   const updateEvent = await EventRegistration.findByIdAndUpdate(
     id,
     { event, group_name, participants },
@@ -349,7 +358,7 @@ const updateEventRegistration = asyncHandler(async (req, res, next) => {
     return next(new ApiError(500, "Failed to update event registration"));
   }
 
-  const updatedEvent = await EventRegistration.findById(updatedEvent._id)
+  const updatedEvent = await EventRegistration.findById(updateEvent._id)
     .populate({
       path: "event",
       select: "name event_type",
@@ -358,10 +367,9 @@ const updateEventRegistration = asyncHandler(async (req, res, next) => {
         select: "name is_group",
       },
     })
-    .populate("participants.user", "name number department year_of_study")
-    .populate("helpers.user", "name")
+    .populate("participants.user", "name number year_of_study")
     .select("-__v -created_at -updated_at");
-  if (!event) {
+  if (!updatedEvent) {
     return next(new ApiError(404, "Event registration not found"));
   }
 
