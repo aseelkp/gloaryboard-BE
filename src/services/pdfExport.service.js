@@ -63,9 +63,9 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 				// Draw main ticket container
 				page.drawRectangle({
 					x: margin,
-					y: ticketY - 445,
+					y: ticketY - 455,
 					width: pageWidth - 2 * margin,
-					height: 445,
+					height: 455,
 					borderColor: rgb(0, 0, 0),
 					borderWidth: 1
 				});
@@ -86,14 +86,14 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 
 				// Draw personal details
 				const fieldHeight = 24;
-				const drawField = (label, value, x, y, width) => {
+				const drawField = (label, value, x, y, width, containerHeight =  fieldHeight) => {
 					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
 
 					page.drawRectangle({
 						x,
-						y: y - fieldHeight,
+						y: y - containerHeight,
 						width,
-						height: fieldHeight,
+						height: containerHeight,
 						borderColor: rgb(0, 0, 0),
 						borderWidth: 1
 					});
@@ -104,46 +104,23 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 						font: helveticaBold,
 						size: 14
 					});
-
 
 					page.drawText(value || '', {
 						x: x + 10 + labelWidth,
 						y: y - 15,
 						font: helvetica,
-						size: 14
+						size: 14,
+						maxWidth: width - labelWidth - 15,
+						lineHeight: 20
 					});
 				};
-				const drawFieldWithTwoLines = (label, value, x, y, width) => {
-					page.drawRectangle({
-						x,
-						y: y - 2 * fieldHeight,
-						width,
-						height: 2 * fieldHeight,
-						borderColor: rgb(0, 0, 0),
-						borderWidth: 1
-					});
-
-					page.drawText(label, {
-						x: x + 5,
-						y: y - 17,
-						font: helveticaBold,
-						size: 14
-					});
-
-					page.drawText(value || '', {
-						x: x + 5,
-						y: y - 35,
-						font: helvetica,
-						size: 14
-					});
-				};
-
+				
 				// Draw all personal details fields
 				const detailsWidth = pageWidth - detailsStartX - margin - 10;
 				drawField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
 				drawField('Reg ID:', user.regId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - fieldHeight, detailsWidth / 2);
-				drawFieldWithTwoLines('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth);
+				drawField('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth, 2 * fieldHeight);
 				drawField('Course:', user.course, detailsStartX, detailsStartY - 4 * fieldHeight, detailsWidth);
 				drawField('Semester:', user.semester, detailsStartX, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
 				drawField('Date of Birth:', user.dateOfBirth, detailsStartX + detailsWidth / 2, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
@@ -175,22 +152,28 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					// Content area
 					page.drawRectangle({
 						x,
-						y: y - 250,
+						y: y - 260,
 						width: programWidth,
-						height: 275,
+						height: 285,
 						borderColor: rgb(0, 0, 0),
 						borderWidth: 1
 					});
 
 					// Draw programs
 					const currentPrograms = programs?.[pageIndex] || [];
+					
+					page.moveTo(x, y - 15);
 					currentPrograms.forEach((program, index) => {
+						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(program, 12) / (programWidth - 10));
+						
 						page.drawText(program, {
 							x: x + 5,
-							y: y - 15 - (index * 17),
 							font: helvetica,
-							size: 12
+							size: 12,
+							lineHeight: 17,
+							maxWidth: programWidth - 10,
 						});
+						page.moveDown(noOfLines * 17);
 					});
 				};
 
@@ -224,7 +207,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					size: 12
 				});
 
-				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before the 13th January:', {
+				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before 13th January:', {
 					x: margin,
 					y: footerY - 20,
 					maxWidth: pageWidth - 2 * margin,
@@ -235,6 +218,13 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 				page.drawText('• A copy of your SSLC Book.', {
 					x: margin,
 					y: footerY - 35,
+					font: helvetica,
+					size: 10
+				});
+
+				page.drawText('• A copy of your Hall Ticket.', {
+					x: margin,
+					y: footerY - 50,
 					font: helvetica,
 					size: 10
 				});
