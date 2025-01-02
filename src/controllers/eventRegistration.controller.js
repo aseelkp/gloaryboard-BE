@@ -32,7 +32,7 @@ const validateParticipationLimit = async (event, participants) => {
       throw new ApiError(400, "Only two individual participations allowed per college");
     }
 
-    if (is_onstage ) {
+    if (true ) {
       for (const participant of participants) {
         const onstageRegistrations = await EventRegistration.find({
           "participants.user": participant.user
@@ -45,9 +45,11 @@ const validateParticipationLimit = async (event, participants) => {
         }).exec();
   
         const filteredOnstageRegistrations = onstageRegistrations.filter(reg => reg.event.event_type);
-  
+        
+
         if (onstageRegistrations.length > 4) {
-          throw new ApiError(400, `Participant ${participant.user} has reached the limit of 4 onstage individual items`);
+          const participantName = (await User.findById(participant.user)).name;
+          throw new ApiError(400, `${participantName} has reached the limit of 4 onstage individual items`);
         }
       }
     }
