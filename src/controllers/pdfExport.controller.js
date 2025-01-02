@@ -11,7 +11,6 @@ function chunkArray(array, chunkSize = 14) {
   }
   return chunks;
 }
-const copy = ["C-Zone Copy", "Student Copy"];
 
 const getParticipantTickets = asyncHandler(async (req, res, next) => {
   const collegeName = req.user.name;
@@ -27,7 +26,12 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
     users.map(async (user) => {
       const eventRegistrations = await EventRegistration.find({
         "participants.user": user._id,
-      }).populate("event");
+      }).populate({
+        path: "event",
+        populate: {
+          path: "event_type",
+        },
+      });
 
       if (eventRegistrations.length === 0) {
         return null;
@@ -45,13 +49,13 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
         semester: user.semester.toString(),
         programs: {
           offStage: chunkArray(eventRegistrations
-            .filter((reg) => !reg.event.is_onstage)
+            .filter((reg) => !reg.event.event_type.is_onstage)
             .map((reg) => reg.event.name)),
           stage: chunkArray(eventRegistrations
-            .filter((reg) => reg.event.is_onstage && !reg.event.is_group)
+            .filter((reg) => reg.event.event_type.is_onstage && !reg.event.event_type.is_group)
             .map((reg) => reg.event.name)),
           group: chunkArray(eventRegistrations
-            .filter((reg) => reg.event.is_group)
+            .filter((reg) => reg.event.event_type.is_group)
             .map((reg) => reg.event.name)),
         },
       };
@@ -83,7 +87,12 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
 
   const eventRegistrations = await EventRegistration.find({
     "participants.user": user._id,
-  }).populate("event");
+  }).populate({
+    path: "event",
+    populate: {
+      path: "event_type",
+    },
+  });  
 
   if (eventRegistrations.length === 0) {
     return next(new ApiError(404, "No registrations found for the user"));
@@ -101,16 +110,15 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
     semester: user.semester.toString(),
     programs: {
       offStage: chunkArray(eventRegistrations
-        .filter((reg) => !reg.event.is_onstage)
+        .filter((reg) => !reg.event.event_type.is_onstage)
         .map((reg) => reg.event.name)),
       stage: chunkArray(eventRegistrations
-        .filter((reg) => reg.event.is_onstage && !reg.event.is_group)
+        .filter((reg) => reg.event.event_type.is_onstage && !reg.event.event_type.is_group)
         .map((reg) => reg.event.name)),
       group: chunkArray(eventRegistrations
-        .filter((reg) => reg.event.is_group)
+        .filter((reg) => reg.event.event_type.is_group)
         .map((reg) => reg.event.name)),
-    },
-    copy,
+    }
   }]
 
   const pdfByte = await generateParticipantTickets(transformedUser);
