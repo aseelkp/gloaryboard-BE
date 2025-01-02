@@ -162,9 +162,9 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					
 					page.moveTo(x, y - 15);
 					currentPrograms.forEach((program, index) => {
-						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(program, 12) / (programWidth - 10));
+						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program.replaceAll(" ", "S")}`, 12) / (programWidth - 10));
 						
-						page.drawText(program, {
+						page.drawText(`• ${program}`, {
 							x: x + 5,
 							font: helvetica,
 							size: 12,
