@@ -32,7 +32,7 @@ const validateParticipationLimit = async (event, participants) => {
       throw new ApiError(400, "Only two individual participations allowed per college");
     }
 
-    if (true ) {
+    if (is_onstage) {
       for (const participant of participants) {
         const onstageRegistrations = await EventRegistration.find({
           "participants.user": participant.user
