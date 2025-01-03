@@ -40,7 +40,7 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
       return {
         regId: user.userId,
         name: user.name.toUpperCase(),
-        sex: user.gender,
+        sex: user.gender.toUpperCase(),
         zone: "C zone",
         college: user.college,
         course: user.course,
@@ -101,7 +101,7 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
   const transformedUser = [{
     regId: user.userId,
     name: user.name.toUpperCase(),
-    sex: user.gender,
+    sex: user.gender.toUpperCase(),
     zone: "C zone",
     college: user.college,
     course: user.course,
