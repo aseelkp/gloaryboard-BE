@@ -168,10 +168,10 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 							x: x + 5,
 							font: helvetica,
 							size: 12,
-							lineHeight: 17,
+							lineHeight: 15,
 							maxWidth: programWidth - 10,
 						});
-						page.moveDown(noOfLines * 17);
+						page.moveDown(noOfLines * 15 + 2);
 					});
 				};
 
