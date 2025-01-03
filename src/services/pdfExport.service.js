@@ -205,7 +205,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					size: 12
 				});
 
-				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before 13th January:', {
+				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before 13th January.', {
 					x: margin,
 					y: footerY - 20,
 					maxWidth: pageWidth - 2 * margin,
