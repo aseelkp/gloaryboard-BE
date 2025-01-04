@@ -210,13 +210,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 						font: helvetica,
 						size: 12
 					});
-				}
-				
-				console.log("1", helvetica.widthOfTextAtSize("Principal Signature & Seal", 12));
-				console.log("2", helvetica.widthOfTextAtSize("University Union Councillor (UUC)", 12));
-				console.log("3", helvetica.widthOfTextAtSize("C-zone General Convenor", 12));
-				
-
+				}				
 
 				// Footer notes
 				const footerY = margin + 50;

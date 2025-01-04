@@ -44,7 +44,7 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
         zone: "C zone",
         college: user.college,
         course: user.course,
-        dateOfBirth: new Date(user.dob).toLocaleDateString(),
+        dateOfBirth: new Date(user.dob).toLocaleDateString("en-GB"),
         image: user.image,
         semester: user.semester.toString(),
         programs: {
@@ -105,7 +105,7 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
     zone: "C zone",
     college: user.college,
     course: user.course,
-    dateOfBirth: new Date(user.dob).toLocaleDateString(),
+    dateOfBirth: new Date(user.dob).toLocaleDateString("en-GB"),
     image: user.image,
     semester: user.semester.toString(),
     programs: {
