@@ -162,16 +162,19 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 
 					// Draw programs
 					let totalLines = 0;
+					let pageBreakTriggered = false;
 					page.moveTo(x, y - 15);
-
+					
 					programs.forEach((program, index) => {
+						if (pageBreakTriggered) return;
 						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program}`, 10.2) / (programWidth - 10));
 						totalLines += noOfLines;
-						if (totalLines > 15) {
+						if (totalLines > 15) {							
 							nextPage = true;
+							pageBreakTriggered = true;
 							programs.splice(0, index);
 							return;
-						} else if (index === programs.length - 1) {
+						} else if (index === programs.length - 1) {							
 							programs.splice(0, index + 1);
 						}
 
