@@ -22,8 +22,6 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 	const ticketY = pageHeight - margin - headerImageHeight - 12;
 
 	for (const user of users) {
-		// Calculate number of pages needed based on program lists
-		const noOfPages = Math.max(user.programs?.offStage?.length, user.programs?.stage?.length) || 1;
 		let image;
 		if (user.image) {
 			if (user.image.endsWith('.png')) {
@@ -40,7 +38,12 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 		}
 
 		for (const copy of copies) {
-			for (let pageIndex = 0; pageIndex < noOfPages; pageIndex++) {
+			let nextPage = false;
+			const offStagePrograms = [...user.programs.offStage];
+			const stagePrograms = [...user.programs.stage];
+			const groupPrograms = [...user.programs.group];
+			do {
+				nextPage = false;
 				const page = pdfDoc.addPage([pageWidth, pageHeight]);
 
 				// Header Image
@@ -84,7 +87,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 
 				// Draw personal details
 				const fieldHeight = 24;
-				const drawField = (label, value, x, y, width, containerHeight =  fieldHeight) => {
+				const drawField = (label, value, x, y, width, containerHeight = fieldHeight) => {
 					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
 
 					page.drawRectangle({
@@ -112,7 +115,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 						lineHeight: 20
 					});
 				};
-				
+
 				// Draw all personal details fields
 				const detailsWidth = pageWidth - detailsStartX - margin - 10;
 				drawField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
@@ -158,27 +161,35 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					});
 
 					// Draw programs
-					const currentPrograms = programs?.[pageIndex] || [];
-					
+					let totalLines = 0;
 					page.moveTo(x, y - 15);
-					currentPrograms.forEach((program, index) => {
-						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program.replaceAll(" ", "S")}`, 12) / (programWidth - 10));
-						
+
+					programs.forEach((program, index) => {
+						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program}`, 10) / (programWidth - 10));
+						totalLines += noOfLines;
+						if (totalLines > 15) {
+							nextPage = true;
+							programs.splice(0, index);
+							return;
+						} else if (index === programs.length - 1) {
+							programs.splice(0, index + 1);
+						}
+
 						page.drawText(`• ${program}`, {
 							x: x + 5,
 							font: helvetica,
-							size: 12,
-							lineHeight: 15,
+							size: 10,
+							lineHeight: 14.5,
 							maxWidth: programWidth - 10,
 						});
-						page.moveDown(noOfLines * 15 + 2);
+						page.moveDown(noOfLines * 14.5 + 2);
 					});
 				};
 
 				// Draw all program sections
-				drawProgramSection('Off Stage', user.programs.offStage, margin + 5, programsY);
-				drawProgramSection('Stage', user.programs.stage, margin + programWidth + 10, programsY);
-				drawProgramSection('Group', user.programs.group, margin + 2 * (programWidth) + 15, programsY);
+				drawProgramSection('Off Stage', offStagePrograms, margin + 5, programsY);
+				drawProgramSection('Stage', stagePrograms, margin + programWidth + 10, programsY);
+				drawProgramSection('Group', groupPrograms, margin + 2 * (programWidth) + 15, programsY);
 
 				// Signature section
 				const signatureY = ticketY - 535;
@@ -199,7 +210,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 
 					page.drawText('C-zone General Convenor', {
 						x: pageWidth - margin - 145,
-						y: signatureY ,
+						y: signatureY,
 						font: helvetica,
 						size: 12
 					});
@@ -210,7 +221,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 						font: helvetica,
 						size: 12
 					});
-				}				
+				}
 
 				// Footer notes
 				const footerY = margin + 50;
@@ -242,7 +253,8 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					font: helvetica,
 					size: 10
 				});
-			}
+			} while (nextPage);
+			// }
 		}
 	}
 
