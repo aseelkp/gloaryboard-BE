@@ -55,7 +55,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 				page.drawText(`( ${copy} )`, {
 					x: pageWidth / 2 - 50,
 					y: pageHeight - margin - headerImageHeight - 3,
-					size: 14
+					size: 12
 				});
 
 				// Draw main ticket container
@@ -168,10 +168,10 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 							x: x + 5,
 							font: helvetica,
 							size: 12,
-							lineHeight: 17,
+							lineHeight: 15,
 							maxWidth: programWidth - 10,
 						});
-						page.moveDown(noOfLines * 17);
+						page.moveDown(noOfLines * 15 + 2);
 					});
 				};
 
@@ -189,12 +189,34 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					size: 12
 				});
 
-				page.drawText('University Union Councillor (UUC)', {
-					x: pageWidth - margin - 186,
-					y: signatureY,
-					font: helvetica,
-					size: 12
-				});
+				if (copy === "Student Copy") {
+					page.drawText('University Union Councillor (UUC)', {
+						x: pageWidth / 2 - 90,
+						y: signatureY,
+						font: helvetica,
+						size: 12
+					});
+
+					page.drawText('C-zone General Convenor', {
+						x: pageWidth - margin - 145,
+						y: signatureY ,
+						font: helvetica,
+						size: 12
+					});
+				} else {
+					page.drawText('University Union Councillor (UUC)', {
+						x: pageWidth - margin - 186,
+						y: signatureY,
+						font: helvetica,
+						size: 12
+					});
+				}
+				
+				console.log("1", helvetica.widthOfTextAtSize("Principal Signature & Seal", 12));
+				console.log("2", helvetica.widthOfTextAtSize("University Union Councillor (UUC)", 12));
+				console.log("3", helvetica.widthOfTextAtSize("C-zone General Convenor", 12));
+				
+
 
 				// Footer notes
 				const footerY = margin + 50;
@@ -205,7 +227,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					size: 12
 				});
 
-				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before 13th January:', {
+				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before 13th January.', {
 					x: margin,
 					y: footerY - 20,
 					maxWidth: pageWidth - 2 * margin,
