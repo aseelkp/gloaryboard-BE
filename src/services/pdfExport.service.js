@@ -214,6 +214,12 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 						font: helvetica,
 						size: 12
 					});
+					page.drawText('(For c-zone office use)', {
+						x: pageWidth - margin - 125,
+						y: signatureY - 13,
+						font: helvetica,
+						size: 10
+					});
 				} else {
 					page.drawText('University Union Councillor (UUC)', {
 						x: pageWidth - margin - 186,
