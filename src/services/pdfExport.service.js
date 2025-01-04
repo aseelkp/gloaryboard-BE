@@ -165,7 +165,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					page.moveTo(x, y - 15);
 
 					programs.forEach((program, index) => {
-						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program}`, 10) / (programWidth - 10));
+						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program}`, 10.2) / (programWidth - 10));
 						totalLines += noOfLines;
 						if (totalLines > 15) {
 							nextPage = true;
