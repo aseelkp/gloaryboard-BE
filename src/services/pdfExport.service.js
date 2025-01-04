@@ -98,14 +98,14 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 
 					page.drawText(label, {
 						x: x + 5,
-						y: y - 15,
+						y: y - 17,
 						font: helveticaBold,
 						size: 14
 					});
 
 					page.drawText(value || '', {
 						x: x + 10 + labelWidth,
-						y: y - 15,
+						y: y - 17,
 						font: helvetica,
 						size: 14,
 						maxWidth: width - labelWidth - 15,
