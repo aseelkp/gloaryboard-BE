@@ -4,14 +4,6 @@ import { EventRegistration } from "../models/eventRegistration.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { generateParticipantTickets } from "../services/pdfExport.service.js";
 
-function chunkArray(array, chunkSize = 14) {
-  const chunks = [];
-  for (let i = 0; i < array?.length; i += chunkSize) {
-    chunks.push(array.slice(i, i + chunkSize));
-  }
-  return chunks;
-}
-
 const getParticipantTickets = asyncHandler(async (req, res, next) => {
   const collegeName = req.user.name;
 
@@ -48,15 +40,15 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
         image: user.image,
         semester: user.semester.toString(),
         programs: {
-          offStage: chunkArray(eventRegistrations
+          offStage: eventRegistrations
             .filter((reg) => !reg.event.event_type.is_onstage)
-            .map((reg) => reg.event.name)),
-          stage: chunkArray(eventRegistrations
+            .map((reg) => reg.event.name),
+          stage: eventRegistrations
             .filter((reg) => reg.event.event_type.is_onstage && !reg.event.event_type.is_group)
-            .map((reg) => reg.event.name)),
-          group: chunkArray(eventRegistrations
+            .map((reg) => reg.event.name),
+          group: eventRegistrations
             .filter((reg) => reg.event.event_type.is_group)
-            .map((reg) => reg.event.name)),
+            .map((reg) => reg.event.name),
         },
       };
     })
@@ -109,15 +101,15 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
     image: user.image,
     semester: user.semester.toString(),
     programs: {
-      offStage: chunkArray(eventRegistrations
+      offStage: eventRegistrations
         .filter((reg) => !reg.event.event_type.is_onstage)
-        .map((reg) => reg.event.name)),
-      stage: chunkArray(eventRegistrations
+        .map((reg) => reg.event.name),
+      stage: eventRegistrations
         .filter((reg) => reg.event.event_type.is_onstage && !reg.event.event_type.is_group)
-        .map((reg) => reg.event.name)),
-      group: chunkArray(eventRegistrations
+        .map((reg) => reg.event.name),
+      group: eventRegistrations
         .filter((reg) => reg.event.event_type.is_group)
-        .map((reg) => reg.event.name)),
+        .map((reg) => reg.event.name),
     }
   }]
 
