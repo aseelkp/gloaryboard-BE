@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, layoutSinglelineText } from 'pdf-lib';
 import fs from 'fs';
 
 export const generateParticipantTickets = async (users, copies = ["C-Zone Copy", "Student Copy"]) => {
@@ -22,8 +22,6 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 	const ticketY = pageHeight - margin - headerImageHeight - 12;
 
 	for (const user of users) {
-		// Calculate number of pages needed based on program lists
-		const noOfPages = Math.max(user.programs?.offStage?.length, user.programs?.stage?.length) || 1;
 		let image;
 		if (user.image) {
 			if (user.image.endsWith('.png')) {
@@ -40,7 +38,12 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 		}
 
 		for (const copy of copies) {
-			for (let pageIndex = 0; pageIndex < noOfPages; pageIndex++) {
+			let nextPage = false;
+			const offStagePrograms = [...user.programs.offStage];
+			const stagePrograms = [...user.programs.stage];
+			const groupPrograms = [...user.programs.group];
+			do {
+				nextPage = false;
 				const page = pdfDoc.addPage([pageWidth, pageHeight]);
 
 				// Header Image
@@ -55,7 +58,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 				page.drawText(`( ${copy} )`, {
 					x: pageWidth / 2 - 50,
 					y: pageHeight - margin - headerImageHeight - 3,
-					size: 14
+					size: 12
 				});
 
 				// Draw main ticket container
@@ -84,7 +87,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 
 				// Draw personal details
 				const fieldHeight = 24;
-				const drawField = (label, value, x, y, width, containerHeight =  fieldHeight) => {
+				const drawField = (label, value, x, y, width, containerHeight = fieldHeight) => {
 					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
 
 					page.drawRectangle({
@@ -98,28 +101,70 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 
 					page.drawText(label, {
 						x: x + 5,
-						y: y - 15,
+						y: y - 17,
 						font: helveticaBold,
 						size: 14
 					});
 
 					page.drawText(value || '', {
 						x: x + 10 + labelWidth,
-						y: y - 15,
+						y: y - 17,
 						font: helvetica,
 						size: 14,
 						maxWidth: width - labelWidth - 15,
 						lineHeight: 20
 					});
 				};
-				
+
+				const drawDynamicSizeField = (label, value, x, y, width, containerHeight = fieldHeight) => {
+					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
+					const valueWidth = helvetica.widthOfTextAtSize(value, 14);
+					let valueFontSize = 14;
+					const availableWidth = width - labelWidth - 15;
+					
+					if (valueWidth > availableWidth) {
+						const { fontSize } = layoutSinglelineText(value, {
+							font: helvetica,
+							bounds: {
+								width: availableWidth
+							}
+						})
+						valueFontSize = fontSize;
+					}
+
+					page.drawRectangle({
+						x,
+						y: y - containerHeight,
+						width,
+						height: containerHeight,
+						borderColor: rgb(0, 0, 0),
+						borderWidth: 1
+					});
+
+					page.drawText(label, {
+						x: x + 5,
+						y: y - 17,
+						font: helveticaBold,
+						size: 14
+					});
+
+					page.drawText(value || '', {
+						x: x + 10 + labelWidth,
+						y: y - 17,
+						font: helvetica,
+						size: valueFontSize,
+						maxWidth: availableWidth,
+						lineHeight: 20
+					});
+				};
+
 				// Draw all personal details fields
 				const detailsWidth = pageWidth - detailsStartX - margin - 10;
-				drawField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
+				drawDynamicSizeField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
 				drawField('Reg ID:', user.regId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawField('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth, 2 * fieldHeight);
-				drawField('Course:', user.course, detailsStartX, detailsStartY - 4 * fieldHeight, detailsWidth);
+				drawDynamicSizeField('Course:', user.course, detailsStartX, detailsStartY - 4 * fieldHeight, detailsWidth);
 				drawField('Semester:', user.semester, detailsStartX, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
 				drawField('Date of Birth:', user.dateOfBirth, detailsStartX + detailsWidth / 2, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
 
@@ -158,27 +203,58 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					});
 
 					// Draw programs
-					const currentPrograms = programs?.[pageIndex] || [];
-					
+					let totalLines = 0;
+					let pageBreakTriggered = false;
 					page.moveTo(x, y - 15);
-					currentPrograms.forEach((program, index) => {
-						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program.replaceAll(" ", "S")}`, 12) / (programWidth - 10));
-						
-						page.drawText(`• ${program}`, {
+
+					programs.forEach((program, index) => {
+						if (pageBreakTriggered) return;
+
+						const programText = `• ${program}`;
+						const words = programText.split(" ");
+						const fontSize = 10;
+						const availableWidth = programWidth - 10;
+						let currentLine = '';
+						let lineCount = 1;
+
+						// Simulate text wrapping to count lines
+						words.forEach(word => {
+							const testLine = currentLine ? `${currentLine} ${word}` : word;
+							const testWidth = helvetica.widthOfTextAtSize(testLine, fontSize);
+							if (testWidth > availableWidth) {
+								currentLine = word;
+								lineCount++;
+							} else {
+								currentLine = testLine;
+							}
+						});
+
+						totalLines += lineCount;
+
+						if (totalLines > 15) {
+							nextPage = true;
+							pageBreakTriggered = true;
+							programs.splice(0, index);
+							return;
+						} else if (index === programs.length - 1) {
+							programs.splice(0, index + 1);
+						}
+
+						page.drawText(programText, {
 							x: x + 5,
 							font: helvetica,
-							size: 12,
-							lineHeight: 17,
-							maxWidth: programWidth - 10,
+							size: fontSize,
+							lineHeight: 14.5,
+							maxWidth: availableWidth
 						});
-						page.moveDown(noOfLines * 17);
+						page.moveDown(lineCount * 14.5 + 2);
 					});
 				};
 
 				// Draw all program sections
-				drawProgramSection('Off Stage', user.programs.offStage, margin + 5, programsY);
-				drawProgramSection('Stage', user.programs.stage, margin + programWidth + 10, programsY);
-				drawProgramSection('Group', user.programs.group, margin + 2 * (programWidth) + 15, programsY);
+				drawProgramSection('Off Stage', offStagePrograms, margin + 5, programsY);
+				drawProgramSection('Stage', stagePrograms, margin + programWidth + 10, programsY);
+				drawProgramSection('Group', groupPrograms, margin + 2 * (programWidth) + 15, programsY);
 
 				// Signature section
 				const signatureY = ticketY - 535;
@@ -189,12 +265,34 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					size: 12
 				});
 
-				page.drawText('University Union Councillor (UUC)', {
-					x: pageWidth - margin - 186,
-					y: signatureY,
-					font: helvetica,
-					size: 12
-				});
+				if (copy === "Student Copy") {
+					page.drawText('University Union Councillor (UUC)', {
+						x: pageWidth / 2 - 90,
+						y: signatureY,
+						font: helvetica,
+						size: 12
+					});
+
+					page.drawText('C-zone General Convenor', {
+						x: pageWidth - margin - 145,
+						y: signatureY,
+						font: helvetica,
+						size: 12
+					});
+					page.drawText('(For c-zone office use)', {
+						x: pageWidth - margin - 125,
+						y: signatureY - 13,
+						font: helvetica,
+						size: 10
+					});
+				} else {
+					page.drawText('University Union Councillor (UUC)', {
+						x: pageWidth - margin - 186,
+						y: signatureY,
+						font: helvetica,
+						size: 12
+					});
+				}
 
 				// Footer notes
 				const footerY = margin + 50;
@@ -205,7 +303,7 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					size: 12
 				});
 
-				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before 13th January:', {
+				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before 13th January.', {
 					x: margin,
 					y: footerY - 20,
 					maxWidth: pageWidth - 2 * margin,
@@ -226,7 +324,8 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					font: helvetica,
 					size: 10
 				});
-			}
+			} while (nextPage);
+			// }
 		}
 	}
 
