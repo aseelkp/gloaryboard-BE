@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, layoutSinglelineText } from 'pdf-lib';
 import fs from 'fs';
 
 export const generateParticipantTickets = async (users, copies = ["C-Zone Copy", "Student Copy"]) => {
@@ -116,13 +116,55 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					});
 				};
 
+				const drawDynamicSizeField = (label, value, x, y, width, containerHeight = fieldHeight) => {
+					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
+					const valueWidth = helvetica.widthOfTextAtSize(value, 14);
+					let valueFontSize = 14;
+					const availableWidth = width - labelWidth - 15;
+					
+					if (valueWidth > availableWidth) {
+						const { fontSize } = layoutSinglelineText(value, {
+							font: helvetica,
+							bounds: {
+								width: availableWidth
+							}
+						})
+						valueFontSize = fontSize;
+					}
+
+					page.drawRectangle({
+						x,
+						y: y - containerHeight,
+						width,
+						height: containerHeight,
+						borderColor: rgb(0, 0, 0),
+						borderWidth: 1
+					});
+
+					page.drawText(label, {
+						x: x + 5,
+						y: y - 17,
+						font: helveticaBold,
+						size: 14
+					});
+
+					page.drawText(value || '', {
+						x: x + 10 + labelWidth,
+						y: y - 17,
+						font: helvetica,
+						size: valueFontSize,
+						maxWidth: availableWidth,
+						lineHeight: 20
+					});
+				};
+
 				// Draw all personal details fields
 				const detailsWidth = pageWidth - detailsStartX - margin - 10;
-				drawField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
+				drawDynamicSizeField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
 				drawField('Reg ID:', user.regId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - fieldHeight, detailsWidth / 2);
 				drawField('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth, 2 * fieldHeight);
-				drawField('Course:', user.course, detailsStartX, detailsStartY - 4 * fieldHeight, detailsWidth);
+				drawDynamicSizeField('Course:', user.course, detailsStartX, detailsStartY - 4 * fieldHeight, detailsWidth);
 				drawField('Semester:', user.semester, detailsStartX, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
 				drawField('Date of Birth:', user.dateOfBirth, detailsStartX + detailsWidth / 2, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
 
@@ -164,28 +206,48 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					let totalLines = 0;
 					let pageBreakTriggered = false;
 					page.moveTo(x, y - 15);
-					
+
 					programs.forEach((program, index) => {
 						if (pageBreakTriggered) return;
-						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program}`, 10.2) / (programWidth - 10));
-						totalLines += noOfLines;
-						if (totalLines > 15) {							
+
+						const programText = `• ${program}`;
+						const words = programText.split(" ");
+						const fontSize = 10;
+						const availableWidth = programWidth - 10;
+						let currentLine = '';
+						let lineCount = 1;
+
+						// Simulate text wrapping to count lines
+						words.forEach(word => {
+							const testLine = currentLine ? `${currentLine} ${word}` : word;
+							const testWidth = helvetica.widthOfTextAtSize(testLine, fontSize);
+							if (testWidth > availableWidth) {
+								currentLine = word;
+								lineCount++;
+							} else {
+								currentLine = testLine;
+							}
+						});
+
+						totalLines += lineCount;
+
+						if (totalLines > 15) {
 							nextPage = true;
 							pageBreakTriggered = true;
 							programs.splice(0, index);
 							return;
-						} else if (index === programs.length - 1) {							
+						} else if (index === programs.length - 1) {
 							programs.splice(0, index + 1);
 						}
 
-						page.drawText(`• ${program}`, {
+						page.drawText(programText, {
 							x: x + 5,
 							font: helvetica,
-							size: 10,
+							size: fontSize,
 							lineHeight: 14.5,
-							maxWidth: programWidth - 10,
+							maxWidth: availableWidth
 						});
-						page.moveDown(noOfLines * 14.5 + 2);
+						page.moveDown(lineCount * 14.5 + 2);
 					});
 				};
 
