@@ -164,28 +164,48 @@ export const generateParticipantTickets = async (users, copies = ["C-Zone Copy",
 					let totalLines = 0;
 					let pageBreakTriggered = false;
 					page.moveTo(x, y - 15);
-					
+
 					programs.forEach((program, index) => {
 						if (pageBreakTriggered) return;
-						const noOfLines = Math.ceil(helvetica.widthOfTextAtSize(`• ${program}`, 10.2) / (programWidth - 10));
-						totalLines += noOfLines;
-						if (totalLines > 15) {							
+
+						const programText = `• ${program}`;
+						const words = programText.split(" ");
+						const fontSize = 10;
+						const availableWidth = programWidth - 10;
+						let currentLine = '';
+						let lineCount = 1;
+
+						// Simulate text wrapping to count lines
+						words.forEach(word => {
+							const testLine = currentLine ? `${currentLine} ${word}` : word;
+							const testWidth = helvetica.widthOfTextAtSize(testLine, fontSize);
+							if (testWidth > availableWidth) {
+								currentLine = word;
+								lineCount++;
+							} else {
+								currentLine = testLine;
+							}
+						});
+
+						totalLines += lineCount;
+
+						if (totalLines > 15) {
 							nextPage = true;
 							pageBreakTriggered = true;
 							programs.splice(0, index);
 							return;
-						} else if (index === programs.length - 1) {							
+						} else if (index === programs.length - 1) {
 							programs.splice(0, index + 1);
 						}
 
-						page.drawText(`• ${program}`, {
+						page.drawText(programText, {
 							x: x + 5,
 							font: helvetica,
-							size: 10,
+							size: fontSize,
 							lineHeight: 14.5,
-							maxWidth: programWidth - 10,
+							maxWidth: availableWidth
 						});
-						page.moveDown(noOfLines * 14.5 + 2);
+						page.moveDown(lineCount * 14.5 + 2);
 					});
 				};
 
