@@ -6,7 +6,6 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { DEPARTMENTS } from "../constants.js";
 import { userService } from "../services/user.service.js";
 
-
 const fetchAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find({}).select(
     "-password -__v -created_at -updated_at"
@@ -36,9 +35,27 @@ const fetchUerCollege = asyncHandler(async (req, res) => {
 });
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { name , gender , phoneNumber , course , semester , year_of_study, capId , dob } = req.body;
+  const {
+    name,
+    gender,
+    phoneNumber,
+    course,
+    semester,
+    year_of_study,
+    capId,
+    dob,
+  } = req.body;
 
-  if ( !name || !gender || !phoneNumber || !course || !semester || !year_of_study || !capId || !dob ) {
+  if (
+    !name ||
+    !gender ||
+    !phoneNumber ||
+    !course ||
+    !semester ||
+    !year_of_study ||
+    !capId ||
+    !dob
+  ) {
     throw new ApiError(400, "All fields are required");
   }
 
@@ -49,7 +66,6 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const user = await userService.registerUser(req);
 
-
   if (!user) {
     throw new ApiError(500, "Failed to create user");
   }
@@ -57,8 +73,44 @@ const registerUser = asyncHandler(async (req, res) => {
   return res
     .status(201)
     .json(new ApiResponse(201, user, "User created successfully"));
+});
 
-})
+const updateUser = asyncHandler(async (req, res) => {
+  const {
+    name,
+    gender,
+    phoneNumber,
+    course,
+    semester,
+    year_of_study,
+    capId,
+    dob,
+  } = req.body;
+
+  if (
+    !name ||
+    !gender ||
+    !phoneNumber ||
+    !course ||
+    !semester ||
+    !year_of_study ||
+    !capId ||
+    !dob
+  ) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  const user = await userService.updateUser(req);
+
+  if (!user) {
+    throw new ApiError(500, "Failed to update user");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User updated successfully"));
+});
+
 const deleteUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -84,11 +136,10 @@ const deleteUserById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, null, "User deleted successfully"));
 });
 
-
-
 export const userController = {
   registerUser,
   fetchAllUsers,
   deleteUserById,
-  fetchUerCollege
+  fetchUerCollege,
+  updateUser,
 };
