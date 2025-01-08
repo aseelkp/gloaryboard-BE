@@ -42,7 +42,46 @@ const registerUser = async (req) => {
     throw error;
   }
 };
+  
+const updateUser = async (req) => {
+  const data = req.body;
+  const userId = req.params.id;
+  let image;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    if (req.file) {
+      const fileName = req.file.originalname;
+      const imageLocalPath = req.file.path;
+      image = await storageService.uploadToSpace(fileName, imageLocalPath, user._id);
+      if (!image) {
+        throw new ApiError(500, "Failed to upload image");
+      }
+      user.image = image;
+    }
+
+    Object.assign(user, data);
+    await user.save();
+
+    const updatedUserWithImage = await User.findById(user._id).select("-password");
+
+    return updatedUserWithImage;
+  } catch (error) {
+    console.log(error, "Error updating user");
+    if (image) {
+      await storageService.deleteFromSpace(image);
+    }
+
+    throw error;
+  }
+};
 
 export const userService = {
   registerUser,
+  updateUser,
 };

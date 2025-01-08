@@ -13,7 +13,7 @@ router.use(verifyJWT, verifyRole(["admin", "organization"]));
 
 
 router.route("/register").post( upload.single('image'), userController.registerUser);
-router.route("/update").put(authController.updateUser);
+router.route("/update/:id").put( upload.single('image'), userController.updateUser);
 router.route("/me").get(authController.getCurrentUser);
 router.route("/delete/:id").delete(userController.deleteUserById);
 router.route("/users").get(userController.fetchUerCollege);

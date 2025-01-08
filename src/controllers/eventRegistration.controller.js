@@ -6,26 +6,31 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Result } from "../models/result.models.js";
 import { User } from "../models/user.models.js";
 import { DEPARTMENTS } from "../constants.js";
+import mongoose from "mongoose";
 
-const validateParticipationLimit = async (event, participants) => {
+const validateParticipationLimit = async (event, participants, excludeId = null) => {
   const eventDetails = await Event.findById(event).populate("event_type");
   const is_group = eventDetails.event_type.is_group;
   const is_onstage = eventDetails.event_type.is_onstage;
   const college = (await User.findById(participants[0].user)).college;
 
+  const excludeCondition = excludeId ? { _id: { $ne: excludeId } } : {};
+
   if (is_group) {
     const groupRegistrations = await EventRegistration.find({
       event,
       "participants.user": { $in: await User.find({ college }).select('_id') },
+      ...excludeCondition
     });
 
     if (groupRegistrations.length > 0) {
-    throw new ApiError(400, "Only one group participation allowed per college");
+      throw new ApiError(400, "Only one group participation allowed per college");
     }
   } else {
     const individualRegistrations = await EventRegistration.find({
       event,
       "participants.user": { $in: await User.find({ college }).select('_id') },
+      ...excludeCondition
     });
 
     if (individualRegistrations.length + participants.length > 2) {
@@ -35,7 +40,8 @@ const validateParticipationLimit = async (event, participants) => {
     if (is_onstage) {
       for (const participant of participants) {
         const onstageRegistrations = await EventRegistration.find({
-          "participants.user": participant.user
+          "participants.user": participant.user,
+          ...excludeCondition
         }).populate({
           path: 'event',
           populate: {
@@ -43,9 +49,8 @@ const validateParticipationLimit = async (event, participants) => {
             match: { is_onstage: true, is_group: false }
           }
         }).exec();
-  
+
         const filteredOnstageRegistrations = onstageRegistrations.filter(reg => reg.event.event_type);
-        
 
         if (filteredOnstageRegistrations.length >= 4) {
           const participantName = (await User.findById(participant.user)).name;
@@ -341,52 +346,65 @@ const getEventRegistrationById = asyncHandler(async (req, res, next) => {
 
 const updateEventRegistration = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-
   const { event, group_name, participants } = req.body;
 
-  if ( event ) {
-    const eventExists = await Event.findById(event);
-    if (!eventExists) {
-      return next(new ApiError(404, "Event not found"));
+  if (!Array.isArray(participants) || participants.length === 0) {
+    return next(new ApiError(400, "Participants must be a non-empty array"));
+  }
+
+  for (const participant of participants) {
+    if (!participant.user || typeof participant.user !== "string") {
+      return next(new ApiError(400, "Each participant must have a valid user_id"));
     }
-    await validateParticipationLimit(event, participants);
-
   }
 
-  const updateEvent = await EventRegistration.findByIdAndUpdate(
-    id,
-    { event, group_name, participants },
-    { new: true }
-  );
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  if (!updateEvent) {
-    return next(new ApiError(500, "Failed to update event registration"));
+  try {
+    const existingRegistration = await EventRegistration.findById(id).session(session);
+    if (!existingRegistration) {
+      throw new ApiError(404, "Event registration not found");
+    }
+
+    // Validate participation limit without deleting the document
+    await validateParticipationLimit(event, participants, id);
+
+    existingRegistration.event = event;
+    existingRegistration.group_name = group_name;
+    existingRegistration.participants = participants;
+
+    const updateEvent = await existingRegistration.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const updatedEvent = await EventRegistration.findById(updateEvent._id)
+      .populate({
+        path: "event",
+        select: "name event_type",
+        populate: {
+          path: "event_type",
+          select: "name is_group",
+        },
+      })
+      .populate("participants.user", "name number year_of_study")
+      .select("-__v -created_at -updated_at");
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          updatedEvent,
+          "Event registration updated successfully"
+        )
+      );
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
   }
-
-  const updatedEvent = await EventRegistration.findById(updateEvent._id)
-    .populate({
-      path: "event",
-      select: "name event_type",
-      populate: {
-        path: "event_type",
-        select: "name is_group",
-      },
-    })
-    .populate("participants.user", "name number year_of_study")
-    .select("-__v -created_at -updated_at");
-  if (!updatedEvent) {
-    return next(new ApiError(404, "Event registration not found"));
-  }
-
-  res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        updatedEvent,
-        "Event registration updated successfully"
-      )
-    );
 });
 
 // Delete event registration by ID
