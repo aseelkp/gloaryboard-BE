@@ -3,13 +3,23 @@ import { EventRegistration } from "../models/eventRegistration.models.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { DEPARTMENTS } from "../constants.js";
 import { userService } from "../services/user.service.js";
 
 const fetchAllUsers = asyncHandler(async (req, res) => {
+
   const users = await User.find({}).select(
     "-password -__v -created_at -updated_at"
-  );
+  ).populate('collegeId', 'name');
+
+
+  const transformedUsers = users.map((user) => {
+    const userObjs = user.toObject();
+    return {
+      ...userObjs,
+      college: userObjs?.collegeId?.name,
+      collegeId : undefined
+    }
+  } );
 
   if (!users) {
     throw new ApiError(404, "No users found");
@@ -17,15 +27,15 @@ const fetchAllUsers = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, users, "Users fetched successfully"));
+    .json(new ApiResponse(200, transformedUsers, "Users fetched successfully"));
 });
 
 const fetchUerCollege = asyncHandler(async (req, res) => {
-  const users = await User.find({ college: req.user.name }).select(
+  const users = await User.find({ collegeId : req.user._id }).select(
     "-password -__v -created_at -updated_at"
   );
 
-  if (!users) {
+    if (!users) {
     throw new ApiError(404, "No users found for the specified college");
   }
 
@@ -61,6 +71,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   if (!req.file) throw new ApiError(400, "Picture is required");
 
+  req.body.collegeId = req.user._id;
   req.body.college = req.user.name;
   req.body.image = req.file.path;
 
