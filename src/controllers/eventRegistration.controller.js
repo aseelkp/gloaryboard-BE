@@ -12,14 +12,14 @@ const validateParticipationLimit = async (event, participants, excludeId = null)
   const eventDetails = await Event.findById(event).populate("event_type");
   const is_group = eventDetails.event_type.is_group;
   const is_onstage = eventDetails.event_type.is_onstage;
-  const college = (await User.findById(participants[0].user)).college;
+  const college = (await User.findById(participants[0].user))?.collegeId;
 
   const excludeCondition = excludeId ? { _id: { $ne: excludeId } } : {};
 
   if (is_group) {
     const groupRegistrations = await EventRegistration.find({
       event,
-      "participants.user": { $in: await User.find({ college }).select('_id') },
+      "participants.user": { $in : await User.find({ collegeId : college }).select('_id') },
       ...excludeCondition
     });
 
@@ -29,7 +29,7 @@ const validateParticipationLimit = async (event, participants, excludeId = null)
   } else {
     const individualRegistrations = await EventRegistration.find({
       event,
-      "participants.user": { $in: await User.find({ college }).select('_id') },
+      "participants.user": { $in: await User.find({ collegeId : college }).select('_id') },
       ...excludeCondition
     });
 
@@ -145,19 +145,7 @@ const createEventRegistration = asyncHandler(async (req, res, next) => {
 
 // Get all event registrations
 const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
-  const { user_type, department } = req.user;
-
-  let matchStage = {};
-  if (user_type === "rep") {
-    const departmentGroup = Object.keys(DEPARTMENTS).find((group) =>
-      DEPARTMENTS[group].includes(department)
-    );
-    if (departmentGroup) {
-      matchStage = {
-        "participants.user.department": { $in: DEPARTMENTS[departmentGroup] },
-      };
-    }
-  }
+  const { user_type } = req.user;
 
   const eventRegistrations = await EventRegistration.aggregate([
     {
@@ -169,7 +157,17 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
       },
     },
     { $unwind: "$participants.user" },
-    { $match: matchStage },
+    {
+      $lookup: {
+        from: "admins",
+        localField: "participants.user.collegeId",
+        foreignField: "_id",
+        as: "college"
+      }
+    },
+    {
+      $unwind : "$college"
+    },
     {
       $lookup: {
         from: "events",
@@ -194,7 +192,7 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
         event: { $first: "$event" },
         group_name: { $first: "$group_name" },
         participants: { $push: "$participants.user" },
-        college : { $first: "$participants.user.college" },
+        college : { $first: "$college.name" },
         score: { $first: "$score" },
         created_at: { $first: "$created_at" },
         updated_at: { $first: "$updated_at" },
@@ -223,7 +221,7 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
 
 // Get all event college registrations
 const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
-  const college = req.user.name; // Accept college as a query parameter
+  const college = req.user.id; // Ensure this matches the field name in your User model
   if (!college) {
     throw new ApiError(400, "College is required");
   }
@@ -240,7 +238,7 @@ const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
     { $unwind: "$participants.user" },
     {
       $match: {
-        "participants.user.college": college, // Match by college
+        "participants.user.collegeId": req.user._id,
       },
     },
     {
@@ -268,7 +266,7 @@ const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
         group_name: { $first: "$group_name" },
         participants: { $push: "$participants.user" },
         score: { $first: "$score" },
-        college: { $first: "$participants.user.college" },
+        college: { $first: "$participants.user.collegeId" },
         created_at: { $first: "$created_at" },
         updated_at: { $first: "$updated_at" },
       },

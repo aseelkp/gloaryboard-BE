@@ -5,10 +5,10 @@ import { ApiError } from "../utils/ApiError.js";
 import { generateParticipantTickets } from "../services/pdfExport.service.js";
 
 const getParticipantTickets = asyncHandler(async (req, res, next) => {
-  const collegeName = req.user.name;
+  const collegeId = req.user.id;
 
   // Fetch users from the specified college
-  const users = await User.find({ college: collegeName });
+  const users = await User.find({ collegeId });
   if (!users || users.length === 0) {
     return next(new ApiError(404, "No users found for the specified college"));
   }
@@ -18,23 +18,28 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
     users.map(async (user) => {
       const eventRegistrations = await EventRegistration.find({
         "participants.user": user._id,
-      }).populate({
+      })
+      .populate({
         path: "event",
         populate: {
           path: "event_type",
         },
       });
 
+
+
       if (eventRegistrations.length === 0) {
         return null;
       }
+
+      const userCollege = (await User.findById(user._id).populate("collegeId")).collegeId.name;
 
       return {
         regId: user.userId,
         name: user.name.toUpperCase(),
         sex: user.gender.toUpperCase(),
         zone: "C zone",
-        college: user.college,
+        college: userCollege,
         course: user.course,
         dateOfBirth: new Date(user.dob).toLocaleDateString("en-GB"),
         image: user.image,
@@ -44,7 +49,11 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
             .filter((reg) => !reg.event.event_type.is_onstage)
             .map((reg) => reg.event.name),
           stage: eventRegistrations
-            .filter((reg) => reg.event.event_type.is_onstage && !reg.event.event_type.is_group)
+            .filter(
+              (reg) =>
+                reg.event.event_type.is_onstage &&
+                !reg.event.event_type.is_group
+            )
             .map((reg) => reg.event.name),
           group: eventRegistrations
             .filter((reg) => reg.event.event_type.is_group)
@@ -84,34 +93,41 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
     populate: {
       path: "event_type",
     },
-  });  
+  });
 
   if (eventRegistrations.length === 0) {
     return next(new ApiError(404, "No registrations found for the user"));
   }
 
-  const transformedUser = [{
-    regId: user.userId,
-    name: user.name.toUpperCase(),
-    sex: user.gender.toUpperCase(),
-    zone: "C zone",
-    college: user.college,
-    course: user.course,
-    dateOfBirth: new Date(user.dob).toLocaleDateString("en-GB"),
-    image: user.image,
-    semester: user.semester.toString(),
-    programs: {
-      offStage: eventRegistrations
-        .filter((reg) => !reg.event.event_type.is_onstage)
-        .map((reg) => reg.event.name),
-      stage: eventRegistrations
-        .filter((reg) => reg.event.event_type.is_onstage && !reg.event.event_type.is_group)
-        .map((reg) => reg.event.name),
-      group: eventRegistrations
-        .filter((reg) => reg.event.event_type.is_group)
-        .map((reg) => reg.event.name),
-    }
-  }]
+  const userCollege = (await User.findById(user._id).populate("collegeId")).collegeId.name;
+
+  const transformedUser = [
+    {
+      regId: user.userId,
+      name: user.name.toUpperCase(),
+      sex: user.gender.toUpperCase(),
+      zone: "C zone",
+      college:userCollege,
+      course: user.course,
+      dateOfBirth: new Date(user.dob).toLocaleDateString("en-GB"),
+      image: user.image,
+      semester: user.semester.toString(),
+      programs: {
+        offStage: eventRegistrations
+          .filter((reg) => !reg.event.event_type.is_onstage)
+          .map((reg) => reg.event.name),
+        stage: eventRegistrations
+          .filter(
+            (reg) =>
+              reg.event.event_type.is_onstage && !reg.event.event_type.is_group
+          )
+          .map((reg) => reg.event.name),
+        group: eventRegistrations
+          .filter((reg) => reg.event.event_type.is_group)
+          .map((reg) => reg.event.name),
+      },
+    },
+  ];
 
   const pdfByte = await generateParticipantTickets(transformedUser);
 
@@ -124,5 +140,5 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
 
 export const pdfExportController = {
   getParticipantTickets,
-  getParticipantTicketById
+  getParticipantTicketById,
 };

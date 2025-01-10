@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   phoneNumber: { type: String, required: true, unique: true },
   course : { type: String, required: true },
   college: { type: String, required: true },
+  collegeId: { type: Schema.Types.ObjectId, ref: "Admin", required : true },
   semester : { type: Number, required: true },
   year_of_study : {type : Number , required : true},
   capId: { type: String, required: true },
