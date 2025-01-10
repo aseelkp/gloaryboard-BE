@@ -145,19 +145,7 @@ const createEventRegistration = asyncHandler(async (req, res, next) => {
 
 // Get all event registrations
 const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
-  const { user_type, department } = req.user;
-
-  let matchStage = {};
-  if (user_type === "rep") {
-    const departmentGroup = Object.keys(DEPARTMENTS).find((group) =>
-      DEPARTMENTS[group].includes(department)
-    );
-    if (departmentGroup) {
-      matchStage = {
-        "participants.user.department": { $in: DEPARTMENTS[departmentGroup] },
-      };
-    }
-  }
+  const { user_type } = req.user;
 
   const eventRegistrations = await EventRegistration.aggregate([
     {
@@ -169,7 +157,17 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
       },
     },
     { $unwind: "$participants.user" },
-    { $match: matchStage },
+    {
+      $lookup: {
+        from: "admins",
+        localField: "participants.user.collegeId",
+        foreignField: "_id",
+        as: "college"
+      }
+    },
+    {
+      $unwind : "$college"
+    },
     {
       $lookup: {
         from: "events",
@@ -194,7 +192,7 @@ const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
         event: { $first: "$event" },
         group_name: { $first: "$group_name" },
         participants: { $push: "$participants.user" },
-        college : { $first: "$participants.user.college" },
+        college : { $first: "$college.name" },
         score: { $first: "$score" },
         created_at: { $first: "$created_at" },
         updated_at: { $first: "$updated_at" },
