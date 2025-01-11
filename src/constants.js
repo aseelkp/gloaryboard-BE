@@ -1,5 +1,7 @@
 export const DB_NAME = "C-Zone";
 
+export const zone = process.env.ZONE ;
+
 export const POSITIONS = {
   1: "first",
   2: "second",
@@ -9,3 +11,4 @@ export const POSITIONS = {
 export const DEPARTMENTS = [];
 
 export const RESULT_CATEGORIES = ["chithrolsavam" , "saahithyolsavam"];
+

@@ -1,333 +1,429 @@
-import { PDFDocument, rgb, StandardFonts, layoutSinglelineText } from 'pdf-lib';
-import fs from 'fs';
+import { PDFDocument, rgb, StandardFonts, layoutSinglelineText } from "pdf-lib";
+import fs from "fs";
+import { zone } from "../constants.js";
+import { getZoneConfig } from "../utils/zoneConfig.js";
 
-export const generateParticipantTickets = async (users, copies = ["C-Zone Copy", "Student Copy"]) => {
-	// Create a new PDF document
-	const pdfDoc = await PDFDocument.create();
+export const generateParticipantTickets = async (users) => {
+  try {
+    const copies = [`${zone.toLocaleUpperCase()} Zone`, "Student Copy"];
+    const { primaryColor, headerImagePath } = getZoneConfig(zone);
+    if (!primaryColor || !headerImagePath) {
+      throw new Error("Zone configuration not found");
+    }
 
-	// Embed the standard fonts
-	const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-	const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const pdfDoc = await PDFDocument.create();
 
-	// Define common measurements and styles
-	const pageWidth = 595.28; // A4 width in points
-	const pageHeight = 841.89; // A4 height in points
-	const margin = 25;
-	const primaryColor = rgb(0.52, 0.45, 0.19); // #857432
+    // Embed the standard fonts
+    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-	const headerImageFile = fs.readFileSync('./src/templates/participant_ticket_header.png');
-	const headerImage = await pdfDoc.embedPng(headerImageFile);
-	const { width: headerImageWidth, height: headerImageHeight } = headerImage.scale(0.12);
+    // Define common measurements and styles
+    const pageWidth = 595.28; // A4 width in points
+    const pageHeight = 841.89; // A4 height in points
+    const margin = 25;
 
-	const ticketY = pageHeight - margin - headerImageHeight - 12;
+    const headerImageFile = fs.readFileSync(headerImagePath);
+    const headerImage = await pdfDoc.embedPng(headerImageFile);
+    const { width: headerImageWidth, height: headerImageHeight } =
+      headerImage.scale(0.12);
 
-	for (const user of users) {
-		let image;
-		if (user.image) {
-			if (user.image.endsWith('.png')) {
-				const pngImageBytes = await fetch(user.image).then((res) => res.arrayBuffer());
-				image = await pdfDoc.embedPng(pngImageBytes);
-			} else if (user.image.endsWith('.jpg') || user.image.endsWith('.jpeg')) {
-				const jpgImageBytes = await fetch(user.image).then((res) => res.arrayBuffer());
-				image = await pdfDoc.embedJpg(jpgImageBytes);
-			} else {
-				throw new Error('Unsupported image format');
-			}
-		} else {
-			image = null;
-		}
+    const ticketY = pageHeight - margin - headerImageHeight - 12;
 
-		for (const copy of copies) {
-			let nextPage = false;
-			const offStagePrograms = [...user.programs.offStage];
-			const stagePrograms = [...user.programs.stage];
-			const groupPrograms = [...user.programs.group];
-			do {
-				nextPage = false;
-				const page = pdfDoc.addPage([pageWidth, pageHeight]);
+    for (const user of users) {
+      let image;
+      if (user.image) {
+        if (user.image.endsWith(".png")) {
+          const pngImageBytes = await fetch(user.image).then((res) =>
+            res.arrayBuffer()
+          );
+          image = await pdfDoc.embedPng(pngImageBytes);
+        } else if (
+          user.image.endsWith(".jpg") ||
+          user.image.endsWith(".jpeg")
+        ) {
+          const jpgImageBytes = await fetch(user.image).then((res) =>
+            res.arrayBuffer()
+          );
+          image = await pdfDoc.embedJpg(jpgImageBytes);
+        } else {
+          throw new Error("Unsupported image format");
+        }
+      } else {
+        image = null;
+      }
 
-				// Header Image
-				page.drawImage(headerImage, {
-					x: pageWidth / 2 - headerImageWidth / 2,
-					y: pageHeight - margin + 10 - headerImageHeight,
-					width: headerImageWidth,
-					height: headerImageHeight
-				});
+      for (const copy of copies) {
+        let nextPage = false;
+        const offStagePrograms = [...user.programs.offStage];
+        const stagePrograms = [...user.programs.stage];
+        const groupPrograms = [...user.programs.group];
+        do {
+          nextPage = false;
+          const page = pdfDoc.addPage([pageWidth, pageHeight]);
 
-				// Header text
-				page.drawText(`( ${copy} )`, {
-					x: pageWidth / 2 - 50,
-					y: pageHeight - margin - headerImageHeight - 3,
-					size: 12
-				});
+          // Header Image
+          page.drawImage(headerImage, {
+            x: pageWidth / 2 - headerImageWidth / 2,
+            y: pageHeight - margin + 10 - headerImageHeight,
+            width: headerImageWidth,
+            height: headerImageHeight,
+          });
 
-				// Draw main ticket container
-				page.drawRectangle({
-					x: margin,
-					y: ticketY - 455,
-					width: pageWidth - 2 * margin,
-					height: 455,
-					borderColor: rgb(0, 0, 0),
-					borderWidth: 1
-				});
+          // Header text
+          page.drawText(`( ${copy} )`, {
+            x: pageWidth / 2 - 50,
+            y: pageHeight - margin - headerImageHeight - 3,
+            size: 12,
+          });
 
-				// Personal Details Section
-				const detailsStartX = margin + 135.2; // After photo space
-				const detailsStartY = ticketY - 10;
+          // Draw main ticket container
+          page.drawRectangle({
+            x: margin,
+            y: ticketY - 455,
+            width: pageWidth - 2 * margin,
+            height: 455,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 1,
+          });
 
-				// Draw photo
-				if (image) {
-					page.drawImage(image, {
-						x: margin + 10,
-						y: ticketY - 154,
-						width: 115.2,
-						height: 144
-					});
-				}
+          // Personal Details Section
+          const detailsStartX = margin + 135.2; // After photo space
+          const detailsStartY = ticketY - 10;
 
-				// Draw personal details
-				const fieldHeight = 24;
-				const drawField = (label, value, x, y, width, containerHeight = fieldHeight) => {
-					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
+          // Draw photo
+          if (image) {
+            page.drawImage(image, {
+              x: margin + 10,
+              y: ticketY - 154,
+              width: 115.2,
+              height: 144,
+            });
+          }
 
-					page.drawRectangle({
-						x,
-						y: y - containerHeight,
-						width,
-						height: containerHeight,
-						borderColor: rgb(0, 0, 0),
-						borderWidth: 1
-					});
+          // Draw personal details
+          const fieldHeight = 24;
+          const drawField = (
+            label,
+            value,
+            x,
+            y,
+            width,
+            containerHeight = fieldHeight
+          ) => {
+            const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
 
-					page.drawText(label, {
-						x: x + 5,
-						y: y - 17,
-						font: helveticaBold,
-						size: 14
-					});
+            page.drawRectangle({
+              x,
+              y: y - containerHeight,
+              width,
+              height: containerHeight,
+              borderColor: rgb(0, 0, 0),
+              borderWidth: 1,
+            });
 
-					page.drawText(value || '', {
-						x: x + 10 + labelWidth,
-						y: y - 17,
-						font: helvetica,
-						size: 14,
-						maxWidth: width - labelWidth - 15,
-						lineHeight: 20
-					});
-				};
+            page.drawText(label, {
+              x: x + 5,
+              y: y - 17,
+              font: helveticaBold,
+              size: 14,
+            });
 
-				const drawDynamicSizeField = (label, value, x, y, width, containerHeight = fieldHeight) => {
-					const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
-					const valueWidth = helvetica.widthOfTextAtSize(value, 14);
-					let valueFontSize = 14;
-					const availableWidth = width - labelWidth - 15;
-					
-					if (valueWidth > availableWidth) {
-						const { fontSize } = layoutSinglelineText(value, {
-							font: helvetica,
-							bounds: {
-								width: availableWidth
-							}
-						})
-						valueFontSize = fontSize;
-					}
+            page.drawText(value || "", {
+              x: x + 10 + labelWidth,
+              y: y - 17,
+              font: helvetica,
+              size: 14,
+              maxWidth: width - labelWidth - 15,
+              lineHeight: 20,
+            });
+          };
 
-					page.drawRectangle({
-						x,
-						y: y - containerHeight,
-						width,
-						height: containerHeight,
-						borderColor: rgb(0, 0, 0),
-						borderWidth: 1
-					});
+          const drawDynamicSizeField = (
+            label,
+            value,
+            x,
+            y,
+            width,
+            containerHeight = fieldHeight
+          ) => {
+            const labelWidth = helveticaBold.widthOfTextAtSize(label, 14);
+            const valueWidth = helvetica.widthOfTextAtSize(value, 14);
+            let valueFontSize = 14;
+            const availableWidth = width - labelWidth - 15;
 
-					page.drawText(label, {
-						x: x + 5,
-						y: y - 17,
-						font: helveticaBold,
-						size: 14
-					});
+            if (valueWidth > availableWidth) {
+              const { fontSize } = layoutSinglelineText(value, {
+                font: helvetica,
+                bounds: {
+                  width: availableWidth,
+                },
+              });
+              valueFontSize = fontSize;
+            }
 
-					page.drawText(value || '', {
-						x: x + 10 + labelWidth,
-						y: y - 17,
-						font: helvetica,
-						size: valueFontSize,
-						maxWidth: availableWidth,
-						lineHeight: 20
-					});
-				};
+            page.drawRectangle({
+              x,
+              y: y - containerHeight,
+              width,
+              height: containerHeight,
+              borderColor: rgb(0, 0, 0),
+              borderWidth: 1,
+            });
 
-				// Draw all personal details fields
-				const detailsWidth = pageWidth - detailsStartX - margin - 10;
-				drawDynamicSizeField('Name:', user.name, detailsStartX, detailsStartY, detailsWidth);
-				drawField('Reg ID:', user.regId, detailsStartX, detailsStartY - fieldHeight, detailsWidth / 2);
-				drawField('Sex:', user.sex, detailsStartX + detailsWidth / 2, detailsStartY - fieldHeight, detailsWidth / 2);
-				drawField('College:', user.college, detailsStartX, detailsStartY - 2 * fieldHeight, detailsWidth, 2 * fieldHeight);
-				drawDynamicSizeField('Course:', user.course, detailsStartX, detailsStartY - 4 * fieldHeight, detailsWidth);
-				drawField('Semester:', user.semester, detailsStartX, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
-				drawField('Date of Birth:', user.dateOfBirth, detailsStartX + detailsWidth / 2, detailsStartY - 5 * fieldHeight, detailsWidth / 2);
+            page.drawText(label, {
+              x: x + 5,
+              y: y - 17,
+              font: helveticaBold,
+              size: 14,
+            });
 
-				// Programs Section
-				const programsY = ticketY - 190;
-				const programWidth = (pageWidth - 2 * margin - 20) / 3;
+            page.drawText(value || "", {
+              x: x + 10 + labelWidth,
+              y: y - 17,
+              font: helvetica,
+              size: valueFontSize,
+              maxWidth: availableWidth,
+              lineHeight: 20,
+            });
+          };
 
-				// Function to draw program section
-				const drawProgramSection = (title, programs, x, y) => {
-					// Header
-					page.drawRectangle({
-						x,
-						y,
-						width: programWidth,
-						height: 25,
-						color: primaryColor
-					});
+          // Draw all personal details fields
+          const detailsWidth = pageWidth - detailsStartX - margin - 10;
+          drawDynamicSizeField(
+            "Name:",
+            user.name,
+            detailsStartX,
+            detailsStartY,
+            detailsWidth
+          );
+          drawField(
+            "Reg ID:",
+            user.regId,
+            detailsStartX,
+            detailsStartY - fieldHeight,
+            detailsWidth / 2
+          );
+          drawField(
+            "Sex:",
+            user.sex,
+            detailsStartX + detailsWidth / 2,
+            detailsStartY - fieldHeight,
+            detailsWidth / 2
+          );
+          drawField(
+            "College:",
+            user.college,
+            detailsStartX,
+            detailsStartY - 2 * fieldHeight,
+            detailsWidth,
+            2 * fieldHeight
+          );
+          drawDynamicSizeField(
+            "Course:",
+            user.course,
+            detailsStartX,
+            detailsStartY - 4 * fieldHeight,
+            detailsWidth
+          );
+          drawField(
+            "Semester:",
+            user.semester,
+            detailsStartX,
+            detailsStartY - 5 * fieldHeight,
+            detailsWidth / 2
+          );
+          drawField(
+            "Date of Birth:",
+            user.dateOfBirth,
+            detailsStartX + detailsWidth / 2,
+            detailsStartY - 5 * fieldHeight,
+            detailsWidth / 2
+          );
 
-					const titleWidth = helveticaBold.widthOfTextAtSize(title, 12);
-					page.drawText(title, {
-						x: x + programWidth / 2 - titleWidth / 2,
-						y: y + 8,
-						font: helveticaBold,
-						size: 12,
-						color: rgb(1, 1, 1)
-					});
+          // Programs Section
+          const programsY = ticketY - 190;
+          const programWidth = (pageWidth - 2 * margin - 20) / 3;
 
-					// Content area
-					page.drawRectangle({
-						x,
-						y: y - 260,
-						width: programWidth,
-						height: 285,
-						borderColor: rgb(0, 0, 0),
-						borderWidth: 1
-					});
+          // Function to draw program section
+          const drawProgramSection = (title, programs, x, y) => {
+            // Header
+            page.drawRectangle({
+              x,
+              y,
+              width: programWidth,
+              height: 25,
+              color: primaryColor,
+            });
 
-					// Draw programs
-					let totalLines = 0;
-					let pageBreakTriggered = false;
-					page.moveTo(x, y - 15);
+            const titleWidth = helveticaBold.widthOfTextAtSize(title, 12);
+            page.drawText(title, {
+              x: x + programWidth / 2 - titleWidth / 2,
+              y: y + 8,
+              font: helveticaBold,
+              size: 12,
+              color: rgb(1, 1, 1),
+            });
 
-					programs.forEach((program, index) => {
-						if (pageBreakTriggered) return;
+            // Content area
+            page.drawRectangle({
+              x,
+              y: y - 260,
+              width: programWidth,
+              height: 285,
+              borderColor: rgb(0, 0, 0),
+              borderWidth: 1,
+            });
 
-						const programText = `• ${program}`;
-						const words = programText.split(" ");
-						const fontSize = 10;
-						const availableWidth = programWidth - 10;
-						let currentLine = '';
-						let lineCount = 1;
+            // Draw programs
+            let totalLines = 0;
+            let pageBreakTriggered = false;
+            page.moveTo(x, y - 15);
 
-						// Simulate text wrapping to count lines
-						words.forEach(word => {
-							const testLine = currentLine ? `${currentLine} ${word}` : word;
-							const testWidth = helvetica.widthOfTextAtSize(testLine, fontSize);
-							if (testWidth > availableWidth) {
-								currentLine = word;
-								lineCount++;
-							} else {
-								currentLine = testLine;
-							}
-						});
+            programs.forEach((program, index) => {
+              if (pageBreakTriggered) return;
 
-						totalLines += lineCount;
+              const programText = `• ${program}`;
+              const words = programText.split(" ");
+              const fontSize = 10;
+              const availableWidth = programWidth - 10;
+              let currentLine = "";
+              let lineCount = 1;
 
-						if (totalLines > 15) {
-							nextPage = true;
-							pageBreakTriggered = true;
-							programs.splice(0, index);
-							return;
-						} else if (index === programs.length - 1) {
-							programs.splice(0, index + 1);
-						}
+              // Simulate text wrapping to count lines
+              words.forEach((word) => {
+                const testLine = currentLine ? `${currentLine} ${word}` : word;
+                const testWidth = helvetica.widthOfTextAtSize(
+                  testLine,
+                  fontSize
+                );
+                if (testWidth > availableWidth) {
+                  currentLine = word;
+                  lineCount++;
+                } else {
+                  currentLine = testLine;
+                }
+              });
 
-						page.drawText(programText, {
-							x: x + 5,
-							font: helvetica,
-							size: fontSize,
-							lineHeight: 14.5,
-							maxWidth: availableWidth
-						});
-						page.moveDown(lineCount * 14.5 + 2);
-					});
-				};
+              totalLines += lineCount;
 
-				// Draw all program sections
-				drawProgramSection('Off Stage', offStagePrograms, margin + 5, programsY);
-				drawProgramSection('Stage', stagePrograms, margin + programWidth + 10, programsY);
-				drawProgramSection('Group', groupPrograms, margin + 2 * (programWidth) + 15, programsY);
+              if (totalLines > 15) {
+                nextPage = true;
+                pageBreakTriggered = true;
+                programs.splice(0, index);
+                return;
+              } else if (index === programs.length - 1) {
+                programs.splice(0, index + 1);
+              }
 
-				// Signature section
-				const signatureY = ticketY - 535;
-				page.drawText('Principal Signature & Seal', {
-					x: margin + 5,
-					y: signatureY,
-					font: helvetica,
-					size: 12
-				});
+              page.drawText(programText, {
+                x: x + 5,
+                font: helvetica,
+                size: fontSize,
+                lineHeight: 14.5,
+                maxWidth: availableWidth,
+              });
+              page.moveDown(lineCount * 14.5 + 2);
+            });
+          };
 
-				if (copy === "Student Copy") {
-					page.drawText('University Union Councillor (UUC)', {
-						x: pageWidth / 2 - 90,
-						y: signatureY,
-						font: helvetica,
-						size: 12
-					});
+          // Draw all program sections
+          drawProgramSection(
+            "Off Stage",
+            offStagePrograms,
+            margin + 5,
+            programsY
+          );
+          drawProgramSection(
+            "Stage",
+            stagePrograms,
+            margin + programWidth + 10,
+            programsY
+          );
+          drawProgramSection(
+            "Group",
+            groupPrograms,
+            margin + 2 * programWidth + 15,
+            programsY
+          );
 
-					page.drawText('C-zone General Convenor', {
-						x: pageWidth - margin - 145,
-						y: signatureY,
-						font: helvetica,
-						size: 12
-					});
-					page.drawText('(For c-zone office use)', {
-						x: pageWidth - margin - 125,
-						y: signatureY - 13,
-						font: helvetica,
-						size: 10
-					});
-				} else {
-					page.drawText('University Union Councillor (UUC)', {
-						x: pageWidth - margin - 186,
-						y: signatureY,
-						font: helvetica,
-						size: 12
-					});
-				}
+          // Signature section
+          const signatureY = ticketY - 535;
+          page.drawText("Principal Signature & Seal", {
+            x: margin + 5,
+            y: signatureY,
+            font: helvetica,
+            size: 12,
+          });
 
-				// Footer notes
-				const footerY = margin + 50;
-				page.drawText('Notes:', {
-					x: margin,
-					y: footerY,
-					font: helveticaBold,
-					size: 12
-				});
+          if (copy === "Student Copy") {
+            page.drawText("University Union Councillor (UUC)", {
+              x: pageWidth / 2 - 90,
+              y: signatureY,
+              font: helvetica,
+              size: 12,
+            });
 
-				page.drawText('• Kindly submit the C-Zone copy along with the following documents to the Program Office on or before 13th January.', {
-					x: margin,
-					y: footerY - 20,
-					maxWidth: pageWidth - 2 * margin,
-					font: helvetica,
-					size: 10
-				});
+            page.drawText(`${zone} General Convenor`, {
+              x: pageWidth - margin - 145,
+              y: signatureY,
+              font: helvetica,
+              size: 12,
+            });
+            page.drawText(`(For ${zone} office use)`, {
+              x: pageWidth - margin - 125,
+              y: signatureY - 13,
+              font: helvetica,
+              size: 10,
+            });
+          } else {
+            page.drawText("University Union Councillor (UUC)", {
+              x: pageWidth - margin - 186,
+              y: signatureY,
+              font: helvetica,
+              size: 12,
+            });
+          }
 
-				page.drawText('• A copy of your SSLC Book.', {
-					x: margin,
-					y: footerY - 35,
-					font: helvetica,
-					size: 10
-				});
+          // Footer notes
+          const footerY = margin + 50;
+          page.drawText("Notes:", {
+            x: margin,
+            y: footerY,
+            font: helveticaBold,
+            size: 12,
+          });
 
-				page.drawText('• A copy of your Hall Ticket.', {
-					x: margin,
-					y: footerY - 50,
-					font: helvetica,
-					size: 10
-				});
-			} while (nextPage);
-			// }
-		}
-	}
+          page.drawText(
+            `• Kindly submit the ${zone} copy along with the following documents to the Program Office on or before 13th January.`,
+            {
+              x: margin,
+              y: footerY - 20,
+              maxWidth: pageWidth - 2 * margin,
+              font: helvetica,
+              size: 10,
+            }
+          );
 
-	return await pdfDoc.save();
+          page.drawText("• A copy of your SSLC Book.", {
+            x: margin,
+            y: footerY - 35,
+            font: helvetica,
+            size: 10,
+          });
+
+          page.drawText("• A copy of your Hall Ticket.", {
+            x: margin,
+            y: footerY - 50,
+            font: helvetica,
+            size: 10,
+          });
+        } while (nextPage);
+        // }
+      }
+    }
+
+    return await pdfDoc.save();
+  } catch (error) {
+    throw error;
+  }
 };
