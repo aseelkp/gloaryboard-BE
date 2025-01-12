@@ -6,7 +6,7 @@ import { getZoneConfig } from "../utils/zoneConfig.js";
 export const generateParticipantTickets = async (users) => {
   try {
     const copies = [`${zone.toLocaleUpperCase()}-Zone Copy`, "Student Copy"];
-    const { primaryColor, headerImagePath } = getZoneConfig(zone);
+    const { primaryColor, headerImagePath, footerText } = getZoneConfig(zone);
     if (!primaryColor || !headerImagePath) {
       throw new Error("Zone configuration not found");
     }
@@ -384,39 +384,26 @@ export const generateParticipantTickets = async (users) => {
             });
           }
 
-          // Footer notes
-          const footerY = margin + 50;
-          page.drawText("Notes:", {
-            x: margin,
-            y: footerY,
-            font: helveticaBold,
-            size: 12,
-          });
+		  if (footerText) {
+				// Footer notes
+				const footerY = margin + 45;
+				page.drawText("Notes:", {
+					x: margin,
+					y: footerY,
+					font: helveticaBold,
+					size: 12,
+				});
+				page.moveTo(margin, footerY - 15);
 
-          page.drawText(
-            `• Kindly submit the ${zone.toLocaleUpperCase()}-zone copy along with the following documents to the Program Office on or before 13th January.`,
-            {
-              x: margin,
-              y: footerY - 20,
-              maxWidth: pageWidth - 2 * margin,
-              font: helvetica,
-              size: 10,
-            }
-          );
-
-          page.drawText("• A copy of your SSLC Book.", {
-            x: margin,
-            y: footerY - 35,
-            font: helvetica,
-            size: 10,
-          });
-
-          page.drawText("• A copy of your Hall Ticket.", {
-            x: margin,
-            y: footerY - 50,
-            font: helvetica,
-            size: 10,
-          });
+				footerText.forEach((note) => {
+					page.drawText(`• ${note}`, {
+						x: margin,
+						font: helvetica,
+						size: 10,
+					});
+					page.moveDown(15);
+				});
+		  }
         } while (nextPage);
         // }
       }
