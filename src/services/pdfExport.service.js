@@ -5,7 +5,7 @@ import { getZoneConfig } from "../utils/zoneConfig.js";
 
 export const generateParticipantTickets = async (users) => {
   try {
-    const copies = [`${zone.toLocaleUpperCase()} Zone`, "Student Copy"];
+    const copies = [`${zone.toLocaleUpperCase()}-Zone Copy`, "Student Copy"];
     const { primaryColor, headerImagePath } = getZoneConfig(zone);
     if (!primaryColor || !headerImagePath) {
       throw new Error("Zone configuration not found");
@@ -25,7 +25,7 @@ export const generateParticipantTickets = async (users) => {
     const headerImageFile = fs.readFileSync(headerImagePath);
     const headerImage = await pdfDoc.embedPng(headerImageFile);
     const { width: headerImageWidth, height: headerImageHeight } =
-      headerImage.scale(0.12);
+      headerImage.scaleToFit(pageWidth - 2 * margin, 165);
 
     const ticketY = pageHeight - margin - headerImageHeight - 12;
 
@@ -363,13 +363,13 @@ export const generateParticipantTickets = async (users) => {
               size: 12,
             });
 
-            page.drawText(`${zone} General Convenor`, {
+            page.drawText(`${zone.toLocaleUpperCase()}-Zone General Convenor`, {
               x: pageWidth - margin - 145,
               y: signatureY,
               font: helvetica,
               size: 12,
             });
-            page.drawText(`(For ${zone} office use)`, {
+            page.drawText(`(For ${zone.toLocaleUpperCase()}-zone office use)`, {
               x: pageWidth - margin - 125,
               y: signatureY - 13,
               font: helvetica,
@@ -394,7 +394,7 @@ export const generateParticipantTickets = async (users) => {
           });
 
           page.drawText(
-            `• Kindly submit the ${zone} copy along with the following documents to the Program Office on or before 13th January.`,
+            `• Kindly submit the ${zone.toLocaleUpperCase()}-zone copy along with the following documents to the Program Office on or before 13th January.`,
             {
               x: margin,
               y: footerY - 20,
