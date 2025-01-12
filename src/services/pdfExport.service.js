@@ -5,8 +5,8 @@ import { getZoneConfig } from "../utils/zoneConfig.js";
 
 export const generateParticipantTickets = async (users) => {
   try {
-    const copies = [`${zone.toLocaleUpperCase()} Zone`, "Student Copy"];
-    const { primaryColor, headerImagePath } = getZoneConfig(zone);
+    const copies = [`${zone.toLocaleUpperCase()}-Zone Copy`, "Student Copy"];
+    const { primaryColor, headerImagePath, footerText } = getZoneConfig(zone);
     if (!primaryColor || !headerImagePath) {
       throw new Error("Zone configuration not found");
     }
@@ -25,7 +25,7 @@ export const generateParticipantTickets = async (users) => {
     const headerImageFile = fs.readFileSync(headerImagePath);
     const headerImage = await pdfDoc.embedPng(headerImageFile);
     const { width: headerImageWidth, height: headerImageHeight } =
-      headerImage.scale(0.12);
+      headerImage.scaleToFit(pageWidth - 2 * margin, 165);
 
     const ticketY = pageHeight - margin - headerImageHeight - 12;
 
@@ -347,7 +347,7 @@ export const generateParticipantTickets = async (users) => {
           );
 
           // Signature section
-          const signatureY = ticketY - 535;
+          const signatureY = ticketY - 540;
           page.drawText("Principal Signature & Seal", {
             x: margin + 5,
             y: signatureY,
@@ -363,13 +363,13 @@ export const generateParticipantTickets = async (users) => {
               size: 12,
             });
 
-            page.drawText(`${zone} General Convenor`, {
+            page.drawText(`${zone.toLocaleUpperCase()}-Zone General Convenor`, {
               x: pageWidth - margin - 145,
               y: signatureY,
               font: helvetica,
               size: 12,
             });
-            page.drawText(`(For ${zone} office use)`, {
+            page.drawText(`(For ${zone.toLocaleUpperCase()}-zone office use)`, {
               x: pageWidth - margin - 125,
               y: signatureY - 13,
               font: helvetica,
@@ -384,39 +384,26 @@ export const generateParticipantTickets = async (users) => {
             });
           }
 
-          // Footer notes
-          const footerY = margin + 50;
-          page.drawText("Notes:", {
-            x: margin,
-            y: footerY,
-            font: helveticaBold,
-            size: 12,
-          });
+		  if (footerText) {
+				// Footer notes
+				const footerY = margin + 45;
+				page.drawText("Notes:", {
+					x: margin,
+					y: footerY,
+					font: helveticaBold,
+					size: 12,
+				});
+				page.moveTo(margin, footerY - 15);
 
-          page.drawText(
-            `• Kindly submit the ${zone} copy along with the following documents to the Program Office on or before 13th January.`,
-            {
-              x: margin,
-              y: footerY - 20,
-              maxWidth: pageWidth - 2 * margin,
-              font: helvetica,
-              size: 10,
-            }
-          );
-
-          page.drawText("• A copy of your SSLC Book.", {
-            x: margin,
-            y: footerY - 35,
-            font: helvetica,
-            size: 10,
-          });
-
-          page.drawText("• A copy of your Hall Ticket.", {
-            x: margin,
-            y: footerY - 50,
-            font: helvetica,
-            size: 10,
-          });
+				footerText.forEach((note) => {
+					page.drawText(`• ${note}`, {
+						x: margin,
+						font: helvetica,
+						size: 10,
+					});
+					page.moveDown(15);
+				});
+		  }
         } while (nextPage);
         // }
       }
