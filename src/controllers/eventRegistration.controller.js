@@ -8,7 +8,11 @@ import { User } from "../models/user.models.js";
 import { DEPARTMENTS } from "../constants.js";
 import mongoose from "mongoose";
 
-const validateParticipationLimit = async (event, participants, excludeId = null) => {
+const validateParticipationLimit = async (
+  event,
+  participants,
+  excludeId = null
+) => {
   const eventDetails = await Event.findById(event).populate("event_type");
   const is_group = eventDetails.event_type.is_group;
   const is_onstage = eventDetails.event_type.is_onstage;
@@ -19,42 +23,59 @@ const validateParticipationLimit = async (event, participants, excludeId = null)
   if (is_group) {
     const groupRegistrations = await EventRegistration.find({
       event,
-      "participants.user": { $in: await User.find({ collegeId }).select('_id') },
-      ...excludeCondition
+      "participants.user": {
+        $in: await User.find({ collegeId }).select("_id"),
+      },
+      ...excludeCondition,
     });
 
     if (groupRegistrations.length > 0) {
-      throw new ApiError(400, "Only one group participation allowed per college");
+      throw new ApiError(
+        400,
+        "Only one group participation allowed per college"
+      );
     }
   } else {
     const individualRegistrations = await EventRegistration.find({
       event,
-      "participants.user": { $in: await User.find({ collegeId }).select('_id') },
-      ...excludeCondition
+      "participants.user": {
+        $in: await User.find({ collegeId }).select("_id"),
+      },
+      ...excludeCondition,
     });
 
     if (individualRegistrations.length + participants.length > 2) {
-      throw new ApiError(400, "Only two individual participations allowed per college");
+      throw new ApiError(
+        400,
+        "Only two individual participations allowed per college"
+      );
     }
 
     if (is_onstage) {
       for (const participant of participants) {
         const onstageRegistrations = await EventRegistration.find({
           "participants.user": participant.user,
-          ...excludeCondition
-        }).populate({
-          path: 'event',
-          populate: {
-            path: 'event_type',
-            match: { is_onstage: true, is_group: false }
-          }
-        }).exec();
+          ...excludeCondition,
+        })
+          .populate({
+            path: "event",
+            populate: {
+              path: "event_type",
+              match: { is_onstage: true, is_group: false },
+            },
+          })
+          .exec();
 
-        const filteredOnstageRegistrations = onstageRegistrations.filter(reg => reg.event.event_type);
+        const filteredOnstageRegistrations = onstageRegistrations.filter(
+          (reg) => reg.event.event_type
+        );
 
         if (filteredOnstageRegistrations.length >= 4) {
           const participantName = (await User.findById(participant.user)).name;
-          throw new ApiError(400, `${participantName} has reached the limit of 4 onstage individual items`);
+          throw new ApiError(
+            400,
+            `${participantName} has reached the limit of 4 onstage individual items`
+          );
         }
       }
     }
@@ -145,87 +166,11 @@ const createEventRegistration = asyncHandler(async (req, res, next) => {
 
 // Get all event registrations
 const getAllEventRegistrations = asyncHandler(async (req, res, next) => {
-  const { user_type, department } = req.user;
+  const { user_type, _id } = req.user;
 
   let matchStage = {};
-  if (user_type === "rep") {
-    const departmentGroup = Object.keys(DEPARTMENTS).find((group) =>
-      DEPARTMENTS[group].includes(department)
-    );
-    if (departmentGroup) {
-      matchStage = {
-        "participants.user.department": { $in: DEPARTMENTS[departmentGroup] },
-      };
-    }
-  }
-
-  const eventRegistrations = await EventRegistration.aggregate([
-    {
-      $lookup: {
-        from: "users",
-        localField: "participants.user",
-        foreignField: "_id",
-        as: "participants.user",
-      },
-    },
-    { $unwind: "$participants.user" },
-    { $match: matchStage },
-    {
-      $lookup: {
-        from: "events",
-        localField: "event",
-        foreignField: "_id",
-        as: "event",
-      },
-    },
-    { $unwind: "$event" },
-    {
-      $lookup: {
-        from: "eventtypes",
-        localField: "event.event_type",
-        foreignField: "_id",
-        as: "event.event_type",
-      },
-    },
-    { $unwind: "$event.event_type" },
-    {
-      $group: {
-        _id: "$_id",
-        event: { $first: "$event" },
-        group_name: { $first: "$group_name" },
-        participants: { $push: "$participants.user" },
-        college : { $first: "$participants.user.college" },
-        score: { $first: "$score" },
-        created_at: { $first: "$created_at" },
-        updated_at: { $first: "$updated_at" },
-      },
-    },
-    {
-      $project: {
-        __v: 0,
-        created_at: 0,
-        updated_at: 0,
-      },
-    },
-    ]);
-
-    // if (!eventRegistrations.length) {
-    //   // 204 No Content
-    //   return next(new ApiError(204, "No event registrations found"));
-  // }
-
-  res
-    .status(200)
-    .json(
-      new ApiResponse(200, eventRegistrations, "Event registrations found")
-    );
-});
-
-// Get all event college registrations
-const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
-  const college = req.user.name; // Accept college as a query parameter
-  if (!college) {
-    throw new ApiError(400, "College is required");
+  if (user_type === "organization") {
+    matchStage = { "participants.user.collegeId": _id };
   }
 
   const eventRegistrations = await EventRegistration.aggregate([
@@ -239,9 +184,26 @@ const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
     },
     { $unwind: "$participants.user" },
     {
-      $match: {
-        "participants.user.college": college, // Match by college
+      $lookup: {
+        from: "admins", // Refers to the Admins collection
+        localField: "participants.user.collegeId",
+        foreignField: "_id",
+        as: "participants.user.college",
       },
+    },
+    {
+      $unwind: {
+        path: "$participants.user.college",
+        preserveNullAndEmptyArrays: true, // Handle cases where no matching college is found
+      },
+    },
+    {
+      $addFields: {
+        "participants.user.college": "$participants.user.college.name", // Replace college object with its name
+      },
+    },
+    {
+      $match: matchStage, // Apply match stage only for "organization"
     },
     {
       $lookup: {
@@ -274,6 +236,11 @@ const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
       },
     },
     {
+      $sort: {
+        "event.name": 1,
+      },
+    },
+    {
       $project: {
         __v: 0,
         created_at: 0,
@@ -283,7 +250,9 @@ const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
   ]);
 
   if (!eventRegistrations.length) {
-    return res.status(200).json(new ApiResponse(200, [], "No event registrations found for the specified college"));
+    return res
+      .status(200)
+      .json(new ApiResponse(200, [], "No event registrations found"));
   }
 
   res
@@ -292,6 +261,111 @@ const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
       new ApiResponse(200, eventRegistrations, "Event registrations found")
     );
 });
+
+// Get all event college registrations
+// const getAllEventRegistrationsCollege = asyncHandler(async (req, res, next) => {
+//   const college = req.user.name; // Accept college as a query parameter
+//   if (!college) {
+//     throw new ApiError(400, "College is required");
+//   }
+
+//   const eventRegistrations = await EventRegistration.aggregate([
+//     {
+//       $lookup: {
+//         from: "users", // Refers to the User collection
+//         localField: "participants.user",
+//         foreignField: "_id",
+//         as: "participants.user",
+//       },
+//     },
+//     { $unwind: "$participants.user" },
+//     {
+//       $lookup: {
+//         from: "admins",
+//         localField: "participants.user.collegeId",
+//         foreignField: "_id",
+//         as: "participants.user.college",
+//       },
+//     },
+//     {
+//       $unwind: "$participants.user.college",
+//     },
+//     {
+//       $match: {
+//         "participants.user.collegeId": req.user._id,
+//       },
+//     },
+//     {
+//       $addFields: {
+//         "participants.user.college": "$participants.user.college.name", // Replace college with its name
+//       },
+//     },
+//     {
+//       $lookup: {
+//         from: "events", // Refers to the Event collection
+//         localField: "event",
+//         foreignField: "_id",
+//         as: "event",
+//       },
+//     },
+//     { $unwind: "$event" },
+//     {
+//       $lookup: {
+//         from: "eventtypes", // Refers to EventType collection
+//         localField: "event.event_type",
+//         foreignField: "_id",
+//         as: "event.event_type",
+//       },
+//     },
+//     { $unwind: "$event.event_type" },
+//     {
+//       $group: {
+//         _id: "$_id",
+//         event: { $first: "$event" },
+//         group_name: { $first: "$group_name" },
+//         participants: {
+//           $push: "$participants.user",
+//         },
+//         score: { $first: "$score" },
+//         college: {
+//           $first: "$participants.user.college",
+//         },
+//         created_at: { $first: "$created_at" },
+//         updated_at: { $first: "$updated_at" },
+//       },
+//     },
+//     {
+//       $sort: {
+//         "event.name": 1,
+//       },
+//     },
+//     {
+//       $project: {
+//         __v: 0,
+//         created_at: 0,
+//         updated_at: 0,
+//       },
+//     },
+//   ]);
+
+//   if (!eventRegistrations.length) {
+//     return res
+//       .status(200)
+//       .json(
+//         new ApiResponse(
+//           200,
+//           [],
+//           "No event registrations found for the specified college"
+//         )
+//       );
+//   }
+
+//   res
+//     .status(200)
+//     .json(
+//       new ApiResponse(200, eventRegistrations, "Event registrations found")
+//     );
+// });
 
 const getEventRegistrationByEventId = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
@@ -354,7 +428,9 @@ const updateEventRegistration = asyncHandler(async (req, res, next) => {
 
   for (const participant of participants) {
     if (!participant.user || typeof participant.user !== "string") {
-      return next(new ApiError(400, "Each participant must have a valid user_id"));
+      return next(
+        new ApiError(400, "Each participant must have a valid user_id")
+      );
     }
   }
 
@@ -362,7 +438,8 @@ const updateEventRegistration = asyncHandler(async (req, res, next) => {
   session.startTransaction();
 
   try {
-    const existingRegistration = await EventRegistration.findById(id).session(session);
+    const existingRegistration =
+      await EventRegistration.findById(id).session(session);
     if (!existingRegistration) {
       throw new ApiError(404, "Event registration not found");
     }
@@ -446,6 +523,5 @@ export const eventRegistrationController = {
   getEventRegistrationById,
   getEventRegistrationByEventId,
   updateEventRegistration,
-  deleteEventRegistration,
-  getAllEventRegistrationsCollege
+  deleteEventRegistration
 };
