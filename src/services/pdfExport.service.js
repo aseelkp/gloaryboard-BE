@@ -347,7 +347,7 @@ export const generateParticipantTickets = async (users) => {
           );
 
           // Signature section
-          const signatureY = ticketY - 535;
+          const signatureY = ticketY - 540;
           page.drawText("Principal Signature & Seal", {
             x: margin + 5,
             y: signatureY,
