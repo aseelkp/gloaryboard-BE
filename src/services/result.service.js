@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { Event } from "../models/event.models.js";
 import { EventRegistration } from "../models/eventRegistration.models.js";
 import { EventType } from "../models/eventType.models.js";
-import { DEPARTMENTS, POSITIONS } from "../constants.js";
+import { DEPARTMENTS, POSITIONS, RESULT_CATEGORIES } from "../constants.js";
 import { User } from "../models/user.models.js";
 import { Counter } from "../models/counter.model.js";
 
@@ -33,14 +33,6 @@ const fetchAllResults = async () => {
               path: "user",
               model: "User",
               select: "-created_at -updated_at -created_by -updated_by -__v", // Exclude from User document
-            },
-          },
-          {
-            path: "helpers",
-            populate: {
-              path: "user",
-              model: "User",
-              select: "-created_at -updated_at -created_by -updated_by -__v", // Exclude from User document for helpers
             },
           },
         ],
@@ -132,62 +124,6 @@ const fetchResultByEventId = async (event_id) => {
         as: "winningRegistrations.eventRegistration.participants.user",
       },
     },
-    {
-      $lookup: {
-        from: "users",
-        localField: "winningRegistrations.eventRegistration.helpers.user",
-        foreignField: "_id",
-        as: "winningRegistrations.eventRegistration.helpers.user",
-      },
-    },
-    // Step 8: Determine department group based on the first participant's department
-    {
-      $addFields: {
-        "winningRegistrations.eventRegistration.departmentGroup": {
-          $switch: {
-            branches: [
-              {
-                case: {
-                  $in: [
-                    { $arrayElemAt: ["$winningRegistrations.eventRegistration.participants.user.department", 0] },
-                    DEPARTMENTS.arts,
-                  ],
-                },
-                then: "Arts",
-              },
-              {
-                case: {
-                  $in: [
-                    { $arrayElemAt: ["$winningRegistrations.eventRegistration.participants.user.department", 0] },
-                    DEPARTMENTS.Science
-                  ],
-                },
-                then: "Science",
-              },
-              {
-                case: {
-                  $in: [
-                    { $arrayElemAt: ["$winningRegistrations.eventRegistration.participants.user.department", 0] },
-                    DEPARTMENTS.BVoc,
-                  ],
-                },
-                then: "BVoc",
-              },
-              {
-                case: {
-                  $in: [
-                    { $arrayElemAt: ["$winningRegistrations.eventRegistration.participants.user.department", 0] },
-                    DEPARTMENTS.Commerce,
-                  ],
-                },
-                then: "Commerce",
-              },
-            ],
-            default: "Others", // For unmatched departments
-          },
-        },
-      },
-    },
     // Step 9: Project only necessary fields and exclude unnecessary fields
     {
       $project: {
@@ -221,7 +157,6 @@ const fetchResultByEventId = async (event_id) => {
       $project: {
         updated_at: 1,
         serial_number: 1,
-        departmentGroup: 1,
         "winningRegistrations._id": 1,
         "winningRegistrations.position": 1,
         "winningRegistrations.eventRegistration": 1,
@@ -230,8 +165,6 @@ const fetchResultByEventId = async (event_id) => {
       },
     },
   ];
-  
-
 
   const result = await Result.aggregate(aggregate);
 
@@ -243,7 +176,7 @@ const createResult = async (event_id, winningRegistrations, user) => {
   session.startTransaction();
 
   try {
-    const event =   await Event.findById(event_id).session(session);
+    const event = await Event.findById(event_id).session(session);
 
     if (!event) {
       throw new Error("Event not found");
@@ -284,23 +217,21 @@ const createResult = async (event_id, winningRegistrations, user) => {
       }
 
       eventRegistration.score = positionScore;
-      
+
       if (!isGroupEvent) {
         for (const participant of eventRegistration.participants) {
           const user = await User.findById(participant.user).session(session);
-  
+
           if (!user) {
             throw new Error("User not found");
           }
-  
+
           user.total_score += positionScore;
-  
+
           await user.save({ session });
         }
       }
 
-
-    
       await eventRegistration.save({ session });
     }
 
@@ -344,7 +275,9 @@ const deleteResult = async (resultId) => {
     const isGroupEvent = eventType.is_group;
     // Revert participant and user scores for non-group events
     for (const registration of result.winningRegistrations) {
-      const eventRegistration = await EventRegistration.findById(registration.eventRegistration).session(session);
+      const eventRegistration = await EventRegistration.findById(
+        registration.eventRegistration
+      ).session(session);
       if (!eventRegistration) {
         throw new Error(
           `Event registration not found for ID: ${registration.eventRegistration}`
@@ -402,7 +335,9 @@ const updateResult = async (resultId, updatedWinningRegistrations, user) => {
       throw new Error("Event not found");
     }
 
-    const eventType = await EventType.findById(event.event_type).session(session);
+    const eventType = await EventType.findById(event.event_type).session(
+      session
+    );
     if (!eventType) {
       throw new Error("Event type not found");
     }
@@ -411,7 +346,9 @@ const updateResult = async (resultId, updatedWinningRegistrations, user) => {
 
     // Revert scores for existing winning registrations
     for (const registration of result.winningRegistrations) {
-      const eventRegistration = await EventRegistration.findById(registration.eventRegistration).session(session);
+      const eventRegistration = await EventRegistration.findById(
+        registration.eventRegistration
+      ).session(session);
       if (!eventRegistration) {
         throw new Error("Event registration not found");
       }
@@ -440,7 +377,9 @@ const updateResult = async (resultId, updatedWinningRegistrations, user) => {
 
     // Apply new scores for updated winning registrations
     for (const registration of updatedWinningRegistrations) {
-      const eventRegistration = await EventRegistration.findById(registration.eventRegistration).session(session);
+      const eventRegistration = await EventRegistration.findById(
+        registration.eventRegistration
+      ).session(session);
       if (!eventRegistration) {
         throw new Error("Event registration not found");
       }
@@ -587,102 +526,229 @@ const fetchLeaderboardData = async () => {
       .sort({ total_score: -1 })
       .limit(10)
       .select("-created_at -updated_at -__v -user_type -_id");
-      const results = await Result.aggregate([
-        {
-          $lookup: {
-            from: "events",
-            localField: "event",
-            foreignField: "_id",
-            as: "eventDetails",
-          },
-        },
-        {
-          $unwind: {
-            path: "$eventDetails",
-          },
-        },
-        {
-          $lookup: {
-            from: "eventtypes",
-            localField: "eventDetails.event_type",
-            foreignField: "_id",
-            as: "evenTypeDetails",
-          },
-        },
-        {
-          $unwind: {
-            path: "$evenTypeDetails",
-          },
-        },
-        {
-          $unwind: "$winningRegistrations",
-        },
-        {
-          $lookup: {
-            from: "eventregistrations",
-            localField: "winningRegistrations.eventRegistration",
-            foreignField: "_id",
-            as: "registrationDetails",
-          },
-        },
-        {
-          $unwind: "$registrationDetails",
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "registrationDetails.participants.user",
-            foreignField: "_id",
-            as: "participantDetails",
-          },
-        },
-        {
-          $addFields: {
-            firstParticipant: { $arrayElemAt: ["$participantDetails", 0] },
-          },
-        },
-        {
-          $group: {
-            _id: "$firstParticipant.department",
-            totalScore: {
-              $sum: "$registrationDetails.score",
-            },
-          },
-        },
-        {
-          $sort: {
-            totalScore: -1,
-          },
-        },
-      ]);
-  
-      const departmentScores = {};
-  
-      Object.keys(DEPARTMENTS).forEach((group) => {
-        departmentScores[group] = 0;
-      });
-  
-      results.forEach(({ _id: department, totalScore }) => {
-        for (const [group, departments] of Object.entries(DEPARTMENTS)) {
-          if (departments.includes(department)) {
-            departmentScores[group] += totalScore;
-            break;
-          }
-        }
-      });
 
+    const collegeResults = await Result.aggregate([
+      {
+        $lookup: {
+          from: "events",
+          localField: "event",
+          foreignField: "_id",
+          as: "eventDetails",
+        },
+      },
+      { $unwind: "$eventDetails" },
+      {
+        $lookup: {
+          from: "eventtypes",
+          localField: "eventDetails.event_type",
+          foreignField: "_id",
+          as: "eventTypeDetails",
+        },
+      },
+      { $unwind: "$eventTypeDetails" },
+      { $unwind: "$winningRegistrations" },
+      {
+        $lookup: {
+          from: "eventregistrations",
+          localField: "winningRegistrations.eventRegistration",
+          foreignField: "_id",
+          as: "registrationDetails",
+        },
+      },
+      { $unwind: "$registrationDetails" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "registrationDetails.participants.user",
+          foreignField: "_id",
+          as: "participantDetails",
+        },
+      },
+      { $unwind: "$participantDetails" },
+      {
+        $lookup: {
+          from: "admins",
+          localField: "participantDetails.collegeId",
+          foreignField: "_id",
+          as: "collegeDetails",
+        },
+      },
+      { $unwind: "$collegeDetails" },
+      {
+        $group: {
+          _id: "$collegeDetails._id",
+          collegeName: { $first: "$collegeDetails.name" },
+          totalScore: { $sum: "$registrationDetails.score" },
+        },
+      },
+      { $sort: { totalScore: -1 } },
+    ]);
+
+    // Get top scorers by result_category
+    const categoryTopScorers = await Result.aggregate([
+      {
+        $lookup: {
+          from: "events",
+          localField: "event",
+          foreignField: "_id",
+          as: "eventDetails",
+        },
+      },
+      {
+        $unwind: "$eventDetails",
+      },
+      {
+        $match: {
+          "eventDetails.result_category": {
+            $in: ["saahithyolsavam", "chithrolsavam"],
+          },
+        },
+      },
+      {
+        $unwind: "$winningRegistrations",
+      },
+      {
+        $lookup: {
+          from: "eventregistrations",
+          localField: "winningRegistrations.eventRegistration",
+          foreignField: "_id",
+          as: "eventRegistrationDetails",
+        },
+      },
+      {
+        $unwind: "$eventRegistrationDetails",
+      },
+      {
+        $unwind: "$eventRegistrationDetails.participants",
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "eventRegistrationDetails.participants.user",
+          foreignField: "_id",
+          as: "participantDetails",
+        },
+      },
+      { $unwind: "$participantDetails" },
+      {
+        $lookup: {
+          from: "admins",
+          localField: "participantDetails.collegeId",
+          foreignField: "_id",
+          as: "participantDetails.college",
+        },
+      },
+      {
+        $unwind: "$participantDetails.college",
+      },
+      {
+        $group: {
+          _id: {
+            category: "$eventDetails.result_category",
+            user: "$participantDetails._id",
+          },
+          category: {
+            $first: "$eventDetails.result_category",
+          },
+          userName: {
+            $first: "$participantDetails.name",
+          },
+          image: {
+            $first: "$participantDetails.image",
+          },
+          college: {
+            $first: "$participantDetails.college",
+          },
+
+          totalScore: {
+            $sum: "$eventRegistrationDetails.score",
+          },
+        },
+      },
+      {
+        $sort: {
+          category: 1,
+          totalScore: -1,
+        },
+      },
+      {
+        $group: {
+          _id: "$category",
+          topScorer: {
+            $first: "$$ROOT",
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          category: "$_id",
+          topScorer: {
+            name: "$topScorer.userName",
+            score: "$topScorer.totalScore",
+            image: "$topScorer.image",
+            college: "$topScorer.college.name",
+          },
+        },
+      },
+    ]);
+
+    // Get top scorers by gender
+    const genderTopScorers = await User.aggregate([
+      {
+        $match: {
+          gender: { $in: ["male", "female"] },
+        },
+      },
+      {
+        $sort: {
+          total_score: -1,
+        },
+      },
+      {
+        $group: {
+          _id: "$gender",
+          topScorer: { $first: "$$ROOT" },
+        },
+      },
+      {
+        $lookup: {
+          from: "admins",
+          localField: "topScorer.collegeId",
+          foreignField: "_id",
+          as: "topScorer.college",
+        },
+      },
+      {
+        $unwind: "$topScorer.college",
+      },
+      {
+        $project: {
+          _id: 0,
+          gender: "$_id",
+          topScorer: {
+            name: "$topScorer.name",
+            score: "$topScorer.total_score",
+            image: "$topScorer.image",
+            college: "$topScorer.college.name",
+          },
+        },
+      },
+    ]);
 
     return {
       lastCount: lastCount.seq,
       topScorers,
-      departmentScores,
+      results: collegeResults,
+      categoryTopScorers,
+      genderTopScorers,
     };
   } catch (error) {
     console.error(error.message);
-    new ApiError(500, "Failed to fetch leaderboard data");
+    throw new ApiError(500, "Failed to fetch leaderboard data");
   }
 };
- 
+
 export const resultServices = {
   fetchAllResults,
   fetchResultByEventId,

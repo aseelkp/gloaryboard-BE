@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
-import { DB_NAME } from "../constants.js";
 import logger from "../services/logger.service.js";
+import { getZoneConfig } from "../utils/zoneConfig.js";
+import { zone } from "../constants.js";
 
 export const connectDB = async () => {
+  const { DB_NAME } = getZoneConfig(zone);
+  console.log(DB_NAME);
   try {
     const conn = await mongoose.connect(
       `${process.env.MONGODB_URI}/${DB_NAME}`

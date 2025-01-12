@@ -7,6 +7,8 @@ const eventSchema = new Schema({
   result_category: { type: String },
   min_participants: { type: Number, required: true },
   max_participants: { type: Number, required: true },
+  start_time: { type: Date, required: true },
+  end_time: { type: Date, required: true },
 });
 
 
