@@ -1,13 +1,14 @@
 import { PDFDocument, rgb, StandardFonts, layoutSinglelineText } from "pdf-lib";
 import fs from "fs";
-import { zone } from "../constants.js";
 import { getZoneConfig } from "../utils/zoneConfig.js";
+import { getZoneEnv } from "../utils/getZoneEnv.js";
 
 // Utility function to sanitize text fields
 const sanitizeText = (text) => text.replace(/\t/g, " ");
 
 export const generateParticipantTickets = async (users) => {
   try {
+    const zone = getZoneEnv();
     const copies = [`${zone.toLocaleUpperCase()}-Zone Copy`, "Student Copy"];
     const { primaryColor, headerImagePath, footerText } = getZoneConfig(zone);
     if (!primaryColor || !headerImagePath) {

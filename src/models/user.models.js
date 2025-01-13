@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { Counter } from "./counter.model.js";
 import { getZoneConfig } from "../utils/zoneConfig.js";
-import { zone } from "../constants.js";
+import { getZoneEnv } from "../utils/getZoneEnv.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre("save", async function (next) {
   if (this.isNew) {
+    const zone = getZoneEnv();
     const { idPrefix } = getZoneConfig(zone);
     const counter = await Counter.findOneAndUpdate(
       { _id: "userId" },
