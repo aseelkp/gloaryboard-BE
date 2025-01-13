@@ -69,35 +69,35 @@ export const generateParticipantTickets = async (users) => {
             height: headerImageHeight,
           });
 
-					// Participant Ticket Header
-					const ticketHeadingY = pageHeight - margin - headerImageHeight - 12;
-					page.drawRectangle({
-						x: 133,
-						y: ticketHeadingY,
-						width: 326,
-						height: 25,
-						color: primaryColor,
-					})
-					page.drawText("Zone Festival", {
-						x: 143,
-						y: ticketHeadingY + 7,
-						font: helveticaBold,
-						size: 16,
-						color: rgb(1, 1, 1),
-					})
-					page.drawRectangle({
-						x: 256,
-						y: ticketHeadingY + 3,
-						width: 200,
-						height: 19,
-						color: rgb(1, 1, 1),
-					})
-					page.drawText("PARTICIPANT'S TICKET", {
-						x: 265,
-						y: ticketHeadingY + 7,
-						font: helveticaBold,
-						size: 16,
-					})
+          // Participant Ticket Header
+          const ticketHeadingY = pageHeight - margin - headerImageHeight - 12;
+          page.drawRectangle({
+            x: 133,
+            y: ticketHeadingY,
+            width: 326,
+            height: 25,
+            color: primaryColor,
+          })
+          page.drawText("Zone Festival", {
+            x: 143,
+            y: ticketHeadingY + 7,
+            font: helveticaBold,
+            size: 16,
+            color: rgb(1, 1, 1),
+          })
+          page.drawRectangle({
+            x: 256,
+            y: ticketHeadingY + 3,
+            width: 200,
+            height: 19,
+            color: rgb(1, 1, 1),
+          })
+          page.drawText("PARTICIPANT'S TICKET", {
+            x: 265,
+            y: ticketHeadingY + 7,
+            font: helveticaBold,
+            size: 16,
+          })
 
           // Header text
           page.drawText(`( ${copy} )`, {
@@ -414,31 +414,187 @@ export const generateParticipantTickets = async (users) => {
             });
           }
 
-		  if (footerText) {
-				// Footer notes
-				const footerY = margin + 45;
-				page.drawText("Notes:", {
-					x: margin,
-					y: footerY,
-					font: helveticaBold,
-					size: 12,
-				});
-				page.moveTo(margin, footerY - 15);
+          if (footerText) {
+            // Footer notes
+            const footerY = margin + 45;
+            page.drawText("Notes:", {
+              x: margin,
+              y: footerY,
+              font: helveticaBold,
+              size: 12,
+            });
+            page.moveTo(margin, footerY - 15);
 
-				footerText.forEach((note) => {
-					page.drawText(`• ${note}`, {
-						x: margin,
-						font: helvetica,
-						size: 10,
-					});
-					page.moveDown(15);
-				});
-		  }
+            footerText.forEach((note) => {
+              page.drawText(`• ${note}`, {
+                x: margin,
+                font: helvetica,
+                size: 10,
+              });
+              page.moveDown(15);
+            });
+          }
         } while (nextPage);
-        // }
       }
     }
 
+    return await pdfDoc.save();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const generateProgramParticipantsList = async (programName, participants) => {
+  try {
+    const { headerImagePath } = getZoneConfig(zone);
+    if (!headerImagePath) {
+      throw new Error("Zone configuration not found");
+    }
+    const pdfDoc = await PDFDocument.create();
+
+    // Embed fonts
+    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    // Define measurements
+    const pageWidth = 595.28; // A4 width in points
+    const pageHeight = 841.89; // A4 height in points
+    const margin = 25;
+    const tableStartY = pageHeight - 180;
+    const rowHeight = 25;
+    const maxRowsPerPage = Math.floor((tableStartY - margin - 50) / rowHeight);
+    // Embed header image
+    const headerImageFile = fs.readFileSync(headerImagePath);
+    const headerImage = await pdfDoc.embedPng(headerImageFile);
+    const { width: headerImageWidth, height: headerImageHeight } =
+      headerImage.scaleToFit(pageWidth - 2 * margin, 100);
+    // Define column widths (Total: 545)
+    const columnWidths = {
+      slNo: 35,
+      chestNo: 70,
+      name: 260,
+      regId: 80,
+      participation: 100
+    };
+    // Helper function to create a new page
+    const createPage = (pageNumber, totalPages) => {
+      const page = pdfDoc.addPage([pageWidth, pageHeight]);
+
+      // Draw header image
+      page.drawImage(headerImage, {
+        x: pageWidth / 2 - headerImageWidth / 2,
+        y: pageHeight - margin - headerImageHeight,
+        width: headerImageWidth,
+        height: headerImageHeight,
+      });
+      // Draw program name
+      page.drawText(programName, {
+        x: pageWidth / 2 - helveticaBold.widthOfTextAtSize(programName, 14) / 2,
+        y: pageHeight - margin - headerImageHeight - 25,
+        font: helveticaBold,
+        size: 14
+      });
+      // Draw page number
+      page.drawText(`Page ${pageNumber} of ${totalPages}`, {
+        x: pageWidth - margin - 45,
+        y: margin,
+        font: helvetica,
+        size: 8,
+        color: rgb(0.5, 0.5, 0.5)
+      });
+      return page;
+    };
+    // Helper function to draw table headers
+    const drawTableHeaders = (page, y) => {
+      let x = margin;
+      const headers = [
+        { text: "Sl.No", width: columnWidths.slNo },
+        { text: "Chest No", width: columnWidths.chestNo },
+        { text: "Name", width: columnWidths.name },
+        { text: "Reg ID", width: columnWidths.regId },
+        { text: "Participation", width: columnWidths.participation }
+      ];
+      // Draw header background
+      page.drawRectangle({
+        x: margin,
+        y: y - rowHeight,
+        width: pageWidth - 2 * margin,
+        height: rowHeight,
+        color: rgb(0.9, 0.9, 0.9)
+      });
+      // Draw header texts
+      headers.forEach(header => {
+        page.drawRectangle({
+          x,
+          y: y - rowHeight,
+          width: header.width,
+          height: rowHeight,
+          borderColor: rgb(0, 0, 0),
+          borderWidth: 1
+        })
+        page.drawText(header.text, {
+          x: x + 5,
+          y: y - rowHeight + 8,
+          font: helveticaBold,
+          size: 10
+        });
+
+        x += header.width;
+      });
+    };
+    // Calculate total pages needed
+    const totalPages = Math.ceil(participants.length / maxRowsPerPage);
+    // Generate pages
+    let currentPage = 1;
+    for (let i = 0; i < participants.length; i += maxRowsPerPage) {
+      const page = createPage(currentPage, totalPages);
+      const pageParticipants = participants.slice(i, i + maxRowsPerPage);
+      let y = tableStartY;
+      // Draw table headers
+      drawTableHeaders(page, y);
+      y -= rowHeight;
+      // Draw participant rows
+      pageParticipants.forEach((participant, index) => {
+        let x = margin;
+        const rowData = [
+          { text: (i + index + 1).toString(), width: columnWidths.slNo },
+          { text: "", width: columnWidths.chestNo }, // Empty chest number column
+          { text: participant.name, width: columnWidths.name },
+          { text: participant.regId, width: columnWidths.regId },
+          { text: "", width: columnWidths.participation } // Empty participation column
+        ];
+        // Draw row background (alternate colors)
+        page.drawRectangle({
+          x: margin,
+          y: y - rowHeight,
+          width: pageWidth - 2 * margin,
+          height: rowHeight,
+          color: index % 2 === 0 ? rgb(1, 1, 1) : rgb(0.95, 0.95, 0.95)
+        });
+        // Draw row data
+        rowData.forEach(data => {
+          // Draw cell border
+          page.drawRectangle({
+            x,
+            y: y - rowHeight,
+            width: data.width,
+            height: rowHeight,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 1
+          })
+          // Draw cell text
+          page.drawText(data.text, {
+            x: x + 5,
+            y: y - rowHeight + 8,
+            font: helvetica,
+            size: 10,
+            maxWidth: data.width - 10
+          });
+          x += data.width;
+        });
+        y -= rowHeight;
+      });
+      currentPage++;
+    }
     return await pdfDoc.save();
   } catch (error) {
     throw error;
