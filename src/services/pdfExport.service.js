@@ -3,6 +3,9 @@ import fs from "fs";
 import { zone } from "../constants.js";
 import { getZoneConfig } from "../utils/zoneConfig.js";
 
+// Utility function to sanitize text fields
+const sanitizeText = (text) => text.replace(/\t/g, " ");
+
 export const generateParticipantTickets = async (users) => {
   try {
     const copies = [`${zone.toLocaleUpperCase()}-Zone Copy`, "Student Copy"];
@@ -30,6 +33,7 @@ export const generateParticipantTickets = async (users) => {
     const ticketY = pageHeight - margin - headerImageHeight - 37;
 
     for (const user of users) {
+      console.log(user.course , user.regId);
       let image;
       if (user.image) {
         if (user.image.endsWith(".png")) {
@@ -158,7 +162,7 @@ export const generateParticipantTickets = async (users) => {
               size: 14,
             });
 
-            page.drawText(value || "", {
+            page.drawText(sanitizeText(value) || "", {
               x: x + 10 + labelWidth,
               y: y - 17,
               font: helvetica,
@@ -207,7 +211,7 @@ export const generateParticipantTickets = async (users) => {
               size: 14,
             });
 
-            page.drawText(value || "", {
+            page.drawText(sanitizeText(value) || "", {
               x: x + 10 + labelWidth,
               y: y - 17,
               font: helvetica,
@@ -250,7 +254,7 @@ export const generateParticipantTickets = async (users) => {
           );
           drawDynamicSizeField(
             "Course:",
-            user.course,
+            sanitizeText(user.course),
             detailsStartX,
             detailsStartY - 4 * fieldHeight,
             detailsWidth
@@ -345,7 +349,7 @@ export const generateParticipantTickets = async (users) => {
                 programs.splice(0, index + 1);
               }
 
-              page.drawText(programText, {
+              page.drawText(sanitizeText(programText), {
                 x: x + 5,
                 font: helvetica,
                 size: fontSize,
@@ -359,19 +363,19 @@ export const generateParticipantTickets = async (users) => {
           // Draw all program sections
           drawProgramSection(
             "Off Stage",
-            offStagePrograms,
+            offStagePrograms.map(sanitizeText),
             margin + 5,
             programsY
           );
           drawProgramSection(
             "Stage",
-            stagePrograms,
+            stagePrograms.map(sanitizeText),
             margin + programWidth + 10,
             programsY
           );
           drawProgramSection(
             "Group",
-            groupPrograms,
+            groupPrograms.map(sanitizeText),
             margin + 2 * programWidth + 15,
             programsY
           );
@@ -426,7 +430,7 @@ export const generateParticipantTickets = async (users) => {
 				page.moveTo(margin, footerY - 15);
 
 				footerText.forEach((note) => {
-					page.drawText(`• ${note}`, {
+					page.drawText(`• ${sanitizeText(note)}`, {
 						x: margin,
 						font: helvetica,
 						size: 10,
