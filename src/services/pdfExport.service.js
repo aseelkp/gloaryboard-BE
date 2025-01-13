@@ -25,9 +25,9 @@ export const generateParticipantTickets = async (users) => {
     const headerImageFile = fs.readFileSync(headerImagePath);
     const headerImage = await pdfDoc.embedPng(headerImageFile);
     const { width: headerImageWidth, height: headerImageHeight } =
-      headerImage.scaleToFit(pageWidth - 2 * margin, 165);
+      headerImage.scaleToFit(pageWidth - 2 * margin - 20, 150);
 
-    const ticketY = pageHeight - margin - headerImageHeight - 12;
+    const ticketY = pageHeight - margin - headerImageHeight - 37;
 
     for (const user of users) {
       let image;
@@ -69,10 +69,40 @@ export const generateParticipantTickets = async (users) => {
             height: headerImageHeight,
           });
 
+					// Participant Ticket Header
+					const ticketHeadingY = pageHeight - margin - headerImageHeight - 12;
+					page.drawRectangle({
+						x: 133,
+						y: ticketHeadingY,
+						width: 326,
+						height: 25,
+						color: primaryColor,
+					})
+					page.drawText("Zone Festival", {
+						x: 143,
+						y: ticketHeadingY + 7,
+						font: helveticaBold,
+						size: 16,
+						color: rgb(1, 1, 1),
+					})
+					page.drawRectangle({
+						x: 256,
+						y: ticketHeadingY + 3,
+						width: 200,
+						height: 19,
+						color: rgb(1, 1, 1),
+					})
+					page.drawText("PARTICIPANT'S TICKET", {
+						x: 265,
+						y: ticketHeadingY + 7,
+						font: helveticaBold,
+						size: 16,
+					})
+
           // Header text
           page.drawText(`( ${copy} )`, {
             x: pageWidth / 2 - 50,
-            y: pageHeight - margin - headerImageHeight - 3,
+            y: ticketHeadingY - 15,
             size: 12,
           });
 
