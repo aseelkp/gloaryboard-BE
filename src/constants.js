@@ -3,7 +3,7 @@ dotenv.config({
   path: "./.env",
 });
 
-export const zone = process.env.ZONE ;
+export const zone = process.env.ZONE||'C';
 
 export const POSITIONS = {
   1: "first",
