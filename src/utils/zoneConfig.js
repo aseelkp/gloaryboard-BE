@@ -20,9 +20,9 @@ export const getZoneConfig = (zone) => {
         };
       case 'd':
         return {
-          primaryColor: rgb(0.19, 0.45, 0.52), 
+          primaryColor: rgb(0.52, 0.17, 0.89), 
           headerImagePath: './src/templates/zone_d_participant_ticket_header.png',
-          footerText: ["Kindly submit the D-zone copy along with the following documents to the Program Office on or before 13th January.", "A copy of your SSLC Book.", "A copy of your Hall Ticket."],
+          footerText: ["Kindly submit the D-zone copy along with the following documents to the Program Office on or before 19th January.", "A copy of your SSLC Book.", "A copy of your Hall Ticket."],
           DB_NAME: "D-Zone",
           idPrefix : "KPM"
         };
