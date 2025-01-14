@@ -722,10 +722,10 @@ export const generateGroupProgramParticipantsList = async (program) => {
       headerImage.scaleToFit(pageWidth - 2 * margin, 100);
 
     // Calculate different start positions and row counts
-    const firstPageTableStartY = pageHeight - 160;
-    const otherPagesTableStartY = pageHeight - 60;
+    let firstPageTableStartY = pageHeight - 145;
+    let otherPagesTableStartY = pageHeight - 45;
     const headerHeight = 25;
-    
+
     // Dynamic row height calculation based on number of participants
     const getRowHeight = (group) => {
       const participantCount = group.participants.length;
@@ -739,7 +739,9 @@ export const generateGroupProgramParticipantsList = async (program) => {
     // Helper function to create a new page
     const createPage = (pageNumber, totalPages) => {
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
-
+      const programText = `ITEM: ${program.name}`;
+      const programTypeWidth = helveticaBold.widthOfTextAtSize(program.type, 12);
+      const programMaxwidth = pageWidth - 2 * margin - programTypeWidth - 10;
       // Only add header image to first page
       if (pageNumber === 1) {
         page.drawImage(headerImage, {
@@ -748,19 +750,25 @@ export const generateGroupProgramParticipantsList = async (program) => {
           width: headerImageWidth,
           height: headerImageHeight,
         });
+
+        const programNameNoOfLines = Math.ceil(helveticaBold.widthOfTextAtSize(programText, 12) / programMaxwidth);
+        firstPageTableStartY -= programNameNoOfLines * 15;
+        otherPagesTableStartY -= programNameNoOfLines * 15;
       }
 
       const programDetailsY = pageNumber === 1 ? pageHeight - margin - headerImageHeight - 20 : pageHeight - margin - 20;
-      page.drawText(program.name, {
+      page.drawText(programText, {
         x: margin,
         y: programDetailsY,
-        font: helvetica,
+        font: helveticaBold,
+        maxWidth: programMaxwidth,
+        lineHeight: 15,
         size: 12
       });
       page.drawText(program.type, {
-        x: pageWidth - margin - helvetica.widthOfTextAtSize(program.type, 12) - 5,
+        x: pageWidth - margin - programTypeWidth - 5,
         y: programDetailsY,
-        font: helvetica,
+        font: helveticaBold,
         size: 12
       });
 
@@ -825,15 +833,15 @@ export const generateGroupProgramParticipantsList = async (program) => {
     let currentGroupIndex = 0;
 
     while (currentGroupIndex < program.participants.length) {
-      
+
       const rowHeight = getRowHeight(program.participants[currentGroupIndex]);
-      
+
       if (currentY - rowHeight < margin + 20) {
         pageBreaks.push(currentGroupIndex);
         currentY = otherPagesTableStartY - headerHeight;
         currentPage++;
       }
-      
+
       currentY -= rowHeight;
       currentGroupIndex++;
     }
@@ -845,7 +853,7 @@ export const generateGroupProgramParticipantsList = async (program) => {
     for (let pageIndex = 0; pageIndex < pageBreaks.length; pageIndex++) {
       const page = createPage(currentPage, pageBreaks.length);
       const startY = currentPage === 1 ? firstPageTableStartY : otherPagesTableStartY;
-      
+
       let y = startY - headerHeight;
       drawTableHeaders(page, y);
 
@@ -881,7 +889,7 @@ export const generateGroupProgramParticipantsList = async (program) => {
             // Draw serial number
             page.drawText((processedGroups + 1).toString(), {
               x: x + 5,
-              y: y - rowHeight/2,
+              y: y - rowHeight / 2,
               font: helvetica,
               size: 10
             });
