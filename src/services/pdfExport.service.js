@@ -730,10 +730,10 @@ export const generateGroupProgramParticipantsList = async (program) => {
     const getRowHeight = (group) => {
       const participantCount = group.participants.length;
       const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(group.college, 10) / (columnWidths.name - 10));
-      const collegeNameHeigth = noOfLinesForCollege * 15 + 10;
+      const collegeNameHeight = noOfLinesForCollege * 13 + 10;
       // Height per participant name (assuming 12 points per name)
       const participantHeight = 12;
-      return collegeNameHeigth + (participantCount * participantHeight);
+      return collegeNameHeight + (participantCount * participantHeight);
     };
 
     // Helper function to create a new page
@@ -893,12 +893,12 @@ export const generateGroupProgramParticipantsList = async (program) => {
               y: y - 15,
               font: helveticaBold,
               size: 10,
-              lineHeight: 15,
+              lineHeight: 13,
               maxWidth: width - 8
             });
 
             // Draw participant names
-            let participantY = y - noOfLinesForCollege * 15 - 13;
+            let participantY = y - noOfLinesForCollege * 13 - 14;
             group.participants.forEach(participant => {
               page.drawText(participant, {
                 x: x + 7,
