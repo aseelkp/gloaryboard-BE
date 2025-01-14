@@ -7,12 +7,11 @@ import { eventRegistrationController } from "../controllers/eventRegistration.co
 import { resultController } from "../controllers/result.controller.js";
 import { adminController } from "../controllers/admin.controller.js";
 import { appConfigController } from "../controllers/appConfig.controller.js";
-
+import { pdfExportController } from "../controllers/pdfExport.controller.js";
 
 const router = Router();
 
 router.use(verifyJWT, verifyRole(["admin"]));
-
 
 // Register a new org 
 router.route("/orgs").get(adminController.fetchAllOrgs);
@@ -51,6 +50,8 @@ router.route("/config/update/:id").patch(appConfigController.updateConfig);
 // event registration routes
 router.route("/event-registration").get(eventRegistrationController.getAllEventRegistrations);
 
+// PDF export routes
+router.route("/participants-list/:id").get(pdfExportController.getProgramParticipantsListById);
 
 router.route("/result-categories").get(eventController.fetchResultCategories);
 
