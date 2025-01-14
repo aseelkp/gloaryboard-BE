@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.models.js";
 import { EventRegistration } from "../models/eventRegistration.models.js";
 import { ApiError } from "../utils/ApiError.js";
-import { generateParticipantTickets } from "../services/pdfExport.service.js";
+import { generateParticipantTickets, generateProgramParticipantsList, generateGroupProgramParticipantsList } from "../services/pdfExport.service.js";
 
 const getParticipantTickets = asyncHandler(async (req, res, next) => {
   const collegeId = req.user.id;
@@ -138,7 +138,55 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
   res.send(Buffer.from(pdfByte));
 });
 
+const getProgramParticipantsListById = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  
+  const eventRegistrations = await EventRegistration.find({
+    event: id,
+  }).populate("participants.user", "name college").populate({
+    path: "event",
+    select: "name",
+    populate: {
+      path: "event_type",
+      select: "is_group is_onstage",
+    }
+  });
+  
+  if (eventRegistrations.length === 0) {
+    return next(new ApiError(404, "No registrations found for the specified event"));
+  }
+
+  const eventName = eventRegistrations[0].event.name;
+  const eventTypeObj = eventRegistrations[0].event.event_type;
+  const eventType = !eventTypeObj.is_onstage ? "Off Stage" : eventTypeObj.is_group ? "Group" : "Stage";
+
+  const participants = eventTypeObj.is_group ? eventRegistrations.map((reg) => ({
+    college: reg.participants[0].user.college,
+    participants: reg.participants.map((participant) => participant.user.name)
+  })) :
+  eventRegistrations.map((reg) => ({
+    name: reg.participants[0].user.name,
+    college: reg.participants[0].user.college
+  }));
+  
+  const data = {
+    name: eventName,
+    type: eventType,
+    participants,
+  };
+
+  // const pdfByte = await generateProgramParticipantsList(data);
+  const pdfByte = eventTypeObj.is_group ? await generateGroupProgramParticipantsList(data) : await generateProgramParticipantsList(data);
+  res.set({
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="${eventName}-participants-list.pdf"`,
+  });
+  res.send(Buffer.from(pdfByte));
+  // res.json(data);
+});
+
 export const pdfExportController = {
   getParticipantTickets,
   getParticipantTicketById,
+  getProgramParticipantsListById,
 };
