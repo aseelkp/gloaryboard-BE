@@ -1,7 +1,7 @@
 import { rgb } from 'pdf-lib';
 export const getZoneConfig = (zone) => {
     
-    switch (zone.toLowerCase()) {
+    switch (zone?.toLowerCase()) {
       case 'a':
         return {
           primaryColor: rgb(0.69, 0.18, 0.51), 

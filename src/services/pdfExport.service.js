@@ -1,10 +1,14 @@
 import { PDFDocument, rgb, StandardFonts, layoutSinglelineText } from "pdf-lib";
 import fs from "fs";
-import { zone } from "../constants.js";
 import { getZoneConfig } from "../utils/zoneConfig.js";
+import { getZoneEnv } from "../utils/getZoneEnv.js";
+
+// Utility function to sanitize text fields
+const sanitizeText = (text) => text.replace(/\t/g, " ");
 
 export const generateParticipantTickets = async (users) => {
   try {
+    const zone = getZoneEnv();
     const copies = [`${zone.toLocaleUpperCase()}-Zone Copy`, "Student Copy"];
     const { primaryColor, headerImagePath, footerText } = getZoneConfig(zone);
     if (!primaryColor || !headerImagePath) {
@@ -30,6 +34,7 @@ export const generateParticipantTickets = async (users) => {
     const ticketY = pageHeight - margin - headerImageHeight - 37;
 
     for (const user of users) {
+      console.log(user.course, user.regId);
       let image;
       if (user.image) {
         if (user.image.endsWith(".png")) {
@@ -158,7 +163,7 @@ export const generateParticipantTickets = async (users) => {
               size: 14,
             });
 
-            page.drawText(value || "", {
+            page.drawText(sanitizeText(value) || "", {
               x: x + 10 + labelWidth,
               y: y - 17,
               font: helvetica,
@@ -207,7 +212,7 @@ export const generateParticipantTickets = async (users) => {
               size: 14,
             });
 
-            page.drawText(value || "", {
+            page.drawText(sanitizeText(value) || "", {
               x: x + 10 + labelWidth,
               y: y - 17,
               font: helvetica,
@@ -250,7 +255,7 @@ export const generateParticipantTickets = async (users) => {
           );
           drawDynamicSizeField(
             "Course:",
-            user.course,
+            sanitizeText(user.course),
             detailsStartX,
             detailsStartY - 4 * fieldHeight,
             detailsWidth
@@ -345,7 +350,7 @@ export const generateParticipantTickets = async (users) => {
                 programs.splice(0, index + 1);
               }
 
-              page.drawText(programText, {
+              page.drawText(sanitizeText(programText), {
                 x: x + 5,
                 font: helvetica,
                 size: fontSize,
@@ -359,19 +364,19 @@ export const generateParticipantTickets = async (users) => {
           // Draw all program sections
           drawProgramSection(
             "Off Stage",
-            offStagePrograms,
+            offStagePrograms.map(sanitizeText),
             margin + 5,
             programsY
           );
           drawProgramSection(
             "Stage",
-            stagePrograms,
+            stagePrograms.map(sanitizeText),
             margin + programWidth + 10,
             programsY
           );
           drawProgramSection(
             "Group",
-            groupPrograms,
+            groupPrograms.map(sanitizeText),
             margin + 2 * programWidth + 15,
             programsY
           );
@@ -426,7 +431,7 @@ export const generateParticipantTickets = async (users) => {
             page.moveTo(margin, footerY - 15);
 
             footerText.forEach((note) => {
-              page.drawText(`• ${note}`, {
+              page.drawText(`• ${sanitizeText(note)}`, {
                 x: margin,
                 font: helvetica,
                 size: 10,
@@ -460,7 +465,7 @@ export const generateProgramParticipantsList = async (program) => {
     const pageWidth = 595.28; // A4 width in points
     const pageHeight = 841.89; // A4 height in points
     const margin = 25;
-    
+
     // Define column widths (Total: 545)
     const columnWidths = {
       slNo: 35,
@@ -487,7 +492,7 @@ export const generateProgramParticipantsList = async (program) => {
     // Helper function to create a new page
     const createPage = (pageNumber, totalPages) => {
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
-      
+
       // Only add header image to first page
       if (pageNumber === 1) {
         page.drawImage(headerImage, {
@@ -570,7 +575,7 @@ export const generateProgramParticipantsList = async (program) => {
     let remainingParticipants = program.participants.length;
     let totalPages = 1; // Start with 1 for first page
     remainingParticipants -= firstPageMaxRows;
-    
+
     if (remainingParticipants > 0) {
       totalPages += Math.ceil(remainingParticipants / otherPagesMaxRows);
     }
@@ -583,13 +588,13 @@ export const generateProgramParticipantsList = async (program) => {
       const page = createPage(currentPage, totalPages);
       const maxRows = currentPage === 1 ? firstPageMaxRows : otherPagesMaxRows;
       const startY = currentPage === 1 ? firstPageTableStartY : otherPagesTableStartY;
-      
+
       const pageParticipants = program.participants.slice(
         processedParticipants,
         processedParticipants + maxRows
       );
-      
-      let y = startY - headerHeight;      
+
+      let y = startY - headerHeight;
       drawTableHeaders(page, y);
       y -= rowHeight;
 
@@ -598,7 +603,7 @@ export const generateProgramParticipantsList = async (program) => {
         let x = margin;
         const rowData = [
           { text: (processedParticipants + index + 1).toString(), width: columnWidths.slNo },
-          { 
+          {
             text: participant.name,
             collegeText: participant.college,
             width: columnWidths.name
@@ -641,7 +646,7 @@ export const generateProgramParticipantsList = async (program) => {
             // Draw college below
             let collegeFontsize = 8;
             const collegeWidth = helvetica.widthOfTextAtSize(data.collegeText, collegeFontsize);
-            if ( collegeWidth > data.width - 7) {
+            if (collegeWidth > data.width - 7) {
               const { fontSize } = layoutSinglelineText(data.collegeText, {
                 font: helvetica,
                 bounds: {
