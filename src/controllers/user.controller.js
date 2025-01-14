@@ -6,20 +6,26 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { userService } from "../services/user.service.js";
 
 const fetchAllUsers = asyncHandler(async (req, res) => {
-
   const users = await User.find({}).select(
     "-password -__v -created_at -updated_at"
   ).populate('collegeId', 'name');
 
-
-  const transformedUsers = users.map((user) => {
+  const transformedUsers = await Promise.all(users.map(async (user) => {
     const userObjs = user.toObject();
+    const eventRegistrations = await EventRegistration.find({ "participants.user": user._id })
+      .populate('event', 'name start_time end_time');
+    const events = eventRegistrations.map(reg => ({
+      name: reg.event.name,
+      startTime: reg.event.start_time || null,
+      endTime: reg.event.end_time || null
+    }));
     return {
       ...userObjs,
       college: userObjs?.collegeId?.name,
-      collegeId : undefined
-    }
-  } );
+      collegeId: undefined,
+      events
+    };
+  }));
 
   if (!users) {
     throw new ApiError(404, "No users found");
