@@ -727,12 +727,13 @@ export const generateGroupProgramParticipantsList = async (program) => {
     const headerHeight = 25;
     
     // Dynamic row height calculation based on number of participants
-    const getRowHeight = (participantCount) => {
-      // Base height for college name plus padding
-      const baseHeight = 25;
+    const getRowHeight = (group) => {
+      const participantCount = group.participants.length;
+      const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(group.college, 10) / (columnWidths.name - 10));
+      const collegeNameHeigth = noOfLinesForCollege * 15 + 10;
       // Height per participant name (assuming 12 points per name)
       const participantHeight = 12;
-      return baseHeight + (participantCount * participantHeight);
+      return collegeNameHeigth + (participantCount * participantHeight);
     };
 
     // Helper function to create a new page
@@ -825,7 +826,7 @@ export const generateGroupProgramParticipantsList = async (program) => {
 
     while (currentGroupIndex < program.participants.length) {
       
-      const rowHeight = getRowHeight(program.participants[currentGroupIndex].participants.length);
+      const rowHeight = getRowHeight(program.participants[currentGroupIndex]);
       
       if (currentY - rowHeight < margin + 20) {
         pageBreaks.push(currentGroupIndex);
@@ -852,7 +853,7 @@ export const generateGroupProgramParticipantsList = async (program) => {
       const pageGroups = program.participants.slice(pageBreaks[pageIndex], nextBreak);
 
       for (const group of pageGroups) {
-        const rowHeight = getRowHeight(group.participants.length);
+        const rowHeight = getRowHeight(group);
         let x = margin;
 
         // Draw row background
@@ -886,23 +887,25 @@ export const generateGroupProgramParticipantsList = async (program) => {
             });
           } else if (index === 1) {
             // Draw college name
+            const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(group.college, 10) / (width - 10));
             page.drawText(group.college, {
               x: x + 5,
               y: y - 15,
               font: helveticaBold,
               size: 10,
-              maxWidth: width - 10
+              lineHeight: 15,
+              maxWidth: width - 8
             });
 
             // Draw participant names
-            let participantY = y - 30;
+            let participantY = y - noOfLinesForCollege * 15 - 13;
             group.participants.forEach(participant => {
               page.drawText(participant, {
-                x: x + 10,
+                x: x + 7,
                 y: participantY,
                 font: helvetica,
-                size: 8,
-                maxWidth: width - 15,
+                size: 9,
+                maxWidth: width - 10,
                 color: rgb(0.4, 0.4, 0.4)
               });
               participantY -= 12;
