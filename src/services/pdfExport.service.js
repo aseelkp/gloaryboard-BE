@@ -5,10 +5,10 @@ import { getZoneEnv } from "../utils/getZoneEnv.js";
 
 // Utility function to sanitize text fields
 const sanitizeText = (text) => text.replace(/\t/g, " ");
+const zone = getZoneEnv();
 
 export const generateParticipantTickets = async (users) => {
   try {
-    const zone = getZoneEnv();
     const copies = [`${zone.toLocaleUpperCase()}-Zone Copy`, "Student Copy"];
     const { primaryColor, headerImagePath, footerText } = getZoneConfig(zone);
     if (!primaryColor || !headerImagePath) {
@@ -680,6 +680,242 @@ export const generateProgramParticipantsList = async (program) => {
       });
 
       processedParticipants += pageParticipants.length;
+      currentPage++;
+    }
+
+    return await pdfDoc.save();
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const generateGroupProgramParticipantsList = async (program) => {
+  try {
+    const { headerImagePath } = getZoneConfig(zone);
+    if (!headerImagePath) {
+      throw new Error("Zone configuration not found");
+    }
+    const pdfDoc = await PDFDocument.create();
+
+    // Embed fonts
+    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    // Define measurements
+    const pageWidth = 595.28; // A4 width in points
+    const pageHeight = 841.89; // A4 height in points
+    const margin = 25;
+
+    // Define column widths (Total: 545)
+    const columnWidths = {
+      slNo: 35,
+      name: 270,
+      registration: 80,
+      chestNo: 80,
+      signature: 80
+    };
+
+    // Embed header image
+    const headerImageFile = fs.readFileSync(headerImagePath);
+    const headerImage = await pdfDoc.embedPng(headerImageFile);
+    const { width: headerImageWidth, height: headerImageHeight } =
+      headerImage.scaleToFit(pageWidth - 2 * margin, 100);
+
+    // Calculate different start positions and row counts
+    const firstPageTableStartY = pageHeight - 160;
+    const otherPagesTableStartY = pageHeight - 60;
+    const headerHeight = 25;
+    
+    // Dynamic row height calculation based on number of participants
+    const getRowHeight = (participantCount) => {
+      // Base height for college name plus padding
+      const baseHeight = 25;
+      // Height per participant name (assuming 12 points per name)
+      const participantHeight = 12;
+      return baseHeight + (participantCount * participantHeight);
+    };
+
+    // Helper function to create a new page
+    const createPage = (pageNumber, totalPages) => {
+      const page = pdfDoc.addPage([pageWidth, pageHeight]);
+
+      // Only add header image to first page
+      if (pageNumber === 1) {
+        page.drawImage(headerImage, {
+          x: pageWidth / 2 - headerImageWidth / 2,
+          y: pageHeight - margin - headerImageHeight,
+          width: headerImageWidth,
+          height: headerImageHeight,
+        });
+      }
+
+      const programDetailsY = pageNumber === 1 ? pageHeight - margin - headerImageHeight - 20 : pageHeight - margin - 20;
+      page.drawText(program.name, {
+        x: margin,
+        y: programDetailsY,
+        font: helvetica,
+        size: 12
+      });
+      page.drawText(program.type, {
+        x: pageWidth - margin - helvetica.widthOfTextAtSize(program.type, 12) - 5,
+        y: programDetailsY,
+        font: helvetica,
+        size: 12
+      });
+
+      // Draw page number
+      page.drawText(`Page ${pageNumber} of ${totalPages}`, {
+        x: pageWidth - margin - 45,
+        y: margin,
+        font: helvetica,
+        size: 8,
+        color: rgb(0.5, 0.5, 0.5)
+      });
+
+      return page;
+    };
+
+    // Helper function to draw table headers
+    const drawTableHeaders = (page, y) => {
+      let x = margin;
+      const headers = [
+        { text: "Sl.No", width: columnWidths.slNo },
+        { text: "College & Participants", width: columnWidths.name },
+        { text: "Registration", width: columnWidths.registration },
+        { text: "Chest No", width: columnWidths.chestNo },
+        { text: "Signature", width: columnWidths.signature }
+      ];
+
+      // Draw header background
+      page.drawRectangle({
+        x: margin,
+        y: y,
+        width: pageWidth - 2 * margin,
+        height: headerHeight,
+        color: rgb(0.9, 0.9, 0.9)
+      });
+
+      // Draw header texts
+      headers.forEach(header => {
+        page.drawRectangle({
+          x,
+          y: y,
+          width: header.width,
+          height: headerHeight,
+          borderColor: rgb(0, 0, 0),
+          borderWidth: 1
+        });
+
+        page.drawText(header.text, {
+          x: x + 5,
+          y: y + 8,
+          font: helveticaBold,
+          size: 10
+        });
+
+        x += header.width;
+      });
+    };
+
+    // Calculate pages needed based on dynamic row heights
+    let currentY = firstPageTableStartY - headerHeight;
+    let currentPage = 1;
+    let pageBreaks = [0];
+    let currentGroupIndex = 0;
+
+    while (currentGroupIndex < program.participants.length) {
+      
+      const rowHeight = getRowHeight(program.participants[currentGroupIndex].participants.length);
+      
+      if (currentY - rowHeight < margin + 20) {
+        pageBreaks.push(currentGroupIndex);
+        currentY = otherPagesTableStartY - headerHeight;
+        currentPage++;
+      }
+      
+      currentY -= rowHeight;
+      currentGroupIndex++;
+    }
+
+    // Generate pages
+    let processedGroups = 0;
+    currentPage = 1;
+
+    for (let pageIndex = 0; pageIndex < pageBreaks.length; pageIndex++) {
+      const page = createPage(currentPage, pageBreaks.length);
+      const startY = currentPage === 1 ? firstPageTableStartY : otherPagesTableStartY;
+      
+      let y = startY - headerHeight;
+      drawTableHeaders(page, y);
+
+      const nextBreak = pageBreaks[pageIndex + 1] || program.participants.length;
+      const pageGroups = program.participants.slice(pageBreaks[pageIndex], nextBreak);
+
+      for (const group of pageGroups) {
+        const rowHeight = getRowHeight(group.participants.length);
+        let x = margin;
+
+        // Draw row background
+        page.drawRectangle({
+          x: margin,
+          y: y - rowHeight,
+          width: pageWidth - 2 * margin,
+          height: rowHeight,
+          color: processedGroups % 2 === 0 ? rgb(1, 1, 1) : rgb(0.95, 0.95, 0.95)
+        });
+
+        // Draw cells
+        Object.values(columnWidths).forEach((width, index) => {
+          // Draw cell border
+          page.drawRectangle({
+            x,
+            y: y - rowHeight,
+            width,
+            height: rowHeight,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 1
+          });
+
+          if (index === 0) {
+            // Draw serial number
+            page.drawText((processedGroups + 1).toString(), {
+              x: x + 5,
+              y: y - rowHeight/2,
+              font: helvetica,
+              size: 10
+            });
+          } else if (index === 1) {
+            // Draw college name
+            page.drawText(group.college, {
+              x: x + 5,
+              y: y - 15,
+              font: helveticaBold,
+              size: 10,
+              maxWidth: width - 10
+            });
+
+            // Draw participant names
+            let participantY = y - 30;
+            group.participants.forEach(participant => {
+              page.drawText(participant, {
+                x: x + 10,
+                y: participantY,
+                font: helvetica,
+                size: 8,
+                maxWidth: width - 15,
+                color: rgb(0.4, 0.4, 0.4)
+              });
+              participantY -= 12;
+            });
+          }
+
+          x += width;
+        });
+
+        y -= rowHeight;
+        processedGroups++;
+      }
+
       currentPage++;
     }
 
