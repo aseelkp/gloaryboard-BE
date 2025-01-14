@@ -74,7 +74,7 @@ const createEvent = asyncHandler(async (req, res, next) => {
 
 const updateEvent = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const { name, event_type , event_category , result_category , min_participants ,max_participants } = req.body;
+  const { name, event_type , event_category , result_category , min_participants ,max_participants , start_time , end_time } = req.body;
 
   const event = await Event.findById(id);
 
@@ -88,6 +88,8 @@ const updateEvent = asyncHandler(async (req, res, next) => {
   if (result_category) event.result_category = result_category;
   if (min_participants) event.min_participants = min_participants;
   if (max_participants) event.max_participants = max_participants;
+  if (start_time) event.start_time = start_time;
+  if (end_time) event.end_time = end_time;
 
   await event.save();
 
