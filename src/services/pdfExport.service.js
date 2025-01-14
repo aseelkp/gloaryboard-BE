@@ -479,7 +479,7 @@ export const generateProgramParticipantsList = async (program) => {
     // Calculate different start positions and row counts for first and subsequent pages
     const firstPageTableStartY = pageHeight - 160; // Accounts for header image and title
     const otherPagesTableStartY = pageHeight - 60; // Starts from top with space for program name
-    const rowHeight = 35;
+    const rowHeight = 33;
     const headerHeight = 25;
     const firstPageMaxRows = Math.floor((firstPageTableStartY - margin - 50) / rowHeight);
     const otherPagesMaxRows = Math.floor((otherPagesTableStartY - margin - 50) / rowHeight);
@@ -633,7 +633,7 @@ export const generateProgramParticipantsList = async (program) => {
             // Draw name on top
             page.drawText(data.text, {
               x: x + 5,
-              y: y + 20,
+              y: y + 18,
               font: helvetica,
               size: 10,
               maxWidth: data.width - 7
@@ -652,7 +652,7 @@ export const generateProgramParticipantsList = async (program) => {
             }
             page.drawText(data.collegeText, {
               x: x + 5,
-              y: y + 8,
+              y: y + 6,
               font: helvetica,
               size: collegeFontsize,
               maxWidth: data.width - 7,
@@ -661,7 +661,7 @@ export const generateProgramParticipantsList = async (program) => {
           } else {
             page.drawText(data.text, {
               x: x + 5,
-              y: y + 13,
+              y: y + 12,
               font: helvetica,
               size: 10,
               maxWidth: data.width - 7
