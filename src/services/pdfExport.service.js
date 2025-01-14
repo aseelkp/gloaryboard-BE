@@ -482,8 +482,8 @@ export const generateProgramParticipantsList = async (program) => {
       headerImage.scaleToFit(pageWidth - 2 * margin, 100);
 
     // Calculate different start positions and row counts for first and subsequent pages
-    const firstPageTableStartY = pageHeight - 160; // Accounts for header image and title
-    const otherPagesTableStartY = pageHeight - 60; // Starts from top with space for program name
+    let firstPageTableStartY = pageHeight - 145; // Accounts for header image and title
+    let otherPagesTableStartY = pageHeight - 45; // Starts from top with space for program name
     const rowHeight = 33;
     const headerHeight = 25;
     const firstPageMaxRows = Math.floor((firstPageTableStartY - margin - 50) / rowHeight);
@@ -492,6 +492,9 @@ export const generateProgramParticipantsList = async (program) => {
     // Helper function to create a new page
     const createPage = (pageNumber, totalPages) => {
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
+      const programText = `ITEM: ${program.name}`;
+      const programTypeWidth = helveticaBold.widthOfTextAtSize(program.type, 12);
+      const programMaxwidth = pageWidth - 2 * margin - programTypeWidth - 10;
 
       // Only add header image to first page
       if (pageNumber === 1) {
@@ -501,19 +504,25 @@ export const generateProgramParticipantsList = async (program) => {
           width: headerImageWidth,
           height: headerImageHeight,
         });
+
+        const programNameNoOfLines = Math.ceil(helveticaBold.widthOfTextAtSize(programText, 12) / programMaxwidth);
+        firstPageTableStartY -= programNameNoOfLines * 15;
+        otherPagesTableStartY -= programNameNoOfLines * 15;
       }
 
       const programDetailsY = pageNumber === 1 ? pageHeight - margin - headerImageHeight - 20 : pageHeight - margin - 20;
-      page.drawText(program.name, {
+      page.drawText(programText, {
         x: margin,
         y: programDetailsY,
-        font: helvetica,
-        size: 12
+        font: helveticaBold,
+        size: 12,
+        maxWidth: programMaxwidth,
+        lineHeight: 15
       });
       page.drawText(program.type, {
-        x: pageWidth - margin - helvetica.widthOfTextAtSize(program.type, 12) - 5,
+        x: pageWidth - margin - helveticaBold.widthOfTextAtSize(program.type, 12) - 5,
         y: programDetailsY,
-        font: helvetica,
+        font: helveticaBold,
         size: 12
       })
 
