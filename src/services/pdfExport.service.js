@@ -492,7 +492,7 @@ export const generateProgramParticipantsList = async (program) => {
     // Helper function to create a new page
     const createPage = (pageNumber, totalPages) => {
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
-      const programText = `ITEM: ${program.name}`;
+      const programText = `ITEM: ${sanitizeText(program.name)}`;
       const programTypeWidth = helveticaBold.widthOfTextAtSize(program.type, 12);
       const programMaxwidth = pageWidth - 2 * margin - programTypeWidth - 10;
 
@@ -613,8 +613,8 @@ export const generateProgramParticipantsList = async (program) => {
         const rowData = [
           { text: (processedParticipants + index + 1).toString(), width: columnWidths.slNo },
           {
-            text: participant.name,
-            collegeText: participant.college,
+            text: sanitizeText(participant.name),
+            collegeText: sanitizeText(participant.college),
             width: columnWidths.name
           },
           { text: "", width: columnWidths.registration },
@@ -738,7 +738,7 @@ export const generateGroupProgramParticipantsList = async (program) => {
     // Dynamic row height calculation based on number of participants
     const getRowHeight = (group) => {
       const participantCount = group.participants.length;
-      const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(group.college, 10) / (columnWidths.name - 10));
+      const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(sanitizeText(group.college), 10) / (columnWidths.name - 10));
       const collegeNameHeight = noOfLinesForCollege * 13 + 10;
       // Height per participant name (assuming 12 points per name)
       const participantHeight = 12;
@@ -748,7 +748,7 @@ export const generateGroupProgramParticipantsList = async (program) => {
     // Helper function to create a new page
     const createPage = (pageNumber, totalPages) => {
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
-      const programText = `ITEM: ${program.name}`;
+      const programText = `ITEM: ${sanitizeText(program.name)}`;
       const programTypeWidth = helveticaBold.widthOfTextAtSize(program.type, 12);
       const programMaxwidth = pageWidth - 2 * margin - programTypeWidth - 10;
       // Only add header image to first page
@@ -904,8 +904,8 @@ export const generateGroupProgramParticipantsList = async (program) => {
             });
           } else if (index === 1) {
             // Draw college name
-            const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(group.college, 10) / (width - 10));
-            page.drawText(group.college, {
+            const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(sanitizeText(group.college), 10) / (width - 10));
+            page.drawText(sanitizeText(group.college), {
               x: x + 5,
               y: y - 15,
               font: helveticaBold,
@@ -917,7 +917,7 @@ export const generateGroupProgramParticipantsList = async (program) => {
             // Draw participant names
             let participantY = y - noOfLinesForCollege * 13 - 14;
             group.participants.forEach(participant => {
-              page.drawText(participant, {
+              page.drawText(sanitizeText(participant), {
                 x: x + 7,
                 y: participantY,
                 font: helvetica,
