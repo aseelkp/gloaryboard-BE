@@ -6,16 +6,26 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { userService } from "../services/user.service.js";
 
 const fetchUsers = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, search = "" } = req.query;
   let users;
+  const searchQuery = search
+    ? {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { phoneNumber: { $regex: search, $options: "i" } },
+          { course: { $regex: search, $options: "i" } },
+        ],
+      }
+    : {};
+
   if (req.user.user_type === "admin") {
-    users = await User.find({})
+    users = await User.find(searchQuery)
       .select("-password -__v -created_at -updated_at")
       .populate("collegeId", "name")
       .skip((page - 1) * limit)
       .limit(Number(limit));
   } else if (req.user.user_type === "organization") {
-    users = await User.find({ collegeId: req.user._id })
+    users = await User.find({ ...searchQuery, collegeId: req.user._id })
       .select("-password -__v -created_at -updated_at")
       .skip((page - 1) * limit)
       .limit(Number(limit));
