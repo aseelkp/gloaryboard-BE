@@ -6,17 +6,22 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { userService } from "../services/user.service.js";
 
 const fetchUsers = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, search = "" } = req.query;
+  const { page = 1, limit = 10, search = "", gender } = req.query;
   let users;
   const searchQuery = search
     ? {
         $or: [
           { name: { $regex: search, $options: "i" } },
           { phoneNumber: { $regex: search, $options: "i" } },
-          { course: { $regex: search, $options: "i" } },
         ],
       }
     : {};
+
+  if (gender) {
+    searchQuery.gender = gender;
+  }
+
+  const totalElements = await User.countDocuments(searchQuery);
 
   if (req.user.user_type === "admin") {
     users = await User.find(searchQuery)
@@ -35,29 +40,11 @@ const fetchUsers = asyncHandler(async (req, res) => {
     throw new ApiError(404, "No users found");
   }
 
-  // const transformedUsers = await Promise.all(
-  //   users.map(async (user) => {
-  //     const userObjs = user.toObject();
-  //     const eventRegistrations = await EventRegistration.find({
-  //       "participants.user": user._id,
-  //     }).populate("event", "name start_time end_time");
-  //     const events = eventRegistrations.map((reg) => ({
-  //       name: reg.event.name,
-  //       startTime: reg.event.start_time || null,
-  //       endTime: reg.event.end_time || null,
-  //     }));
-  //     return {
-  //       ...userObjs,
-  //       college: userObjs?.collegeId?.name,
-  //       collegeId: undefined,
-  //       events,
-  //     };
-  //   })
-  // );
+  const totalPages = Math.ceil(totalElements / limit);
 
   return res
     .status(200)
-    .json(new ApiResponse(200, users, "Users fetched successfully"));
+    .json(new ApiResponse(200, { users, totalElements, limit : Number(limit) , totalPages }, "Users fetched successfully"));
 });
 
 const registerUser = asyncHandler(async (req, res) => {
