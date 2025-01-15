@@ -5,49 +5,49 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { userService } from "../services/user.service.js";
 
-const fetchAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}).select(
-    "-password -__v -created_at -updated_at"
-  ).populate('collegeId', 'name');
-
-  const transformedUsers = await Promise.all(users.map(async (user) => {
-    const userObjs = user.toObject();
-    const eventRegistrations = await EventRegistration.find({ "participants.user": user._id })
-      .populate('event', 'name start_time end_time');
-    const events = eventRegistrations.map(reg => ({
-      name: reg.event.name,
-      startTime: reg.event.start_time || null,
-      endTime: reg.event.end_time || null
-    }));
-    return {
-      ...userObjs,
-      college: userObjs?.collegeId?.name,
-      collegeId: undefined,
-      events
-    };
-  }));
+const fetchUsers = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10 } = req.query;
+  let users;
+  if (req.user.user_type === "admin") {
+    users = await User.find({})
+      .select("-password -__v -created_at -updated_at")
+      .populate("collegeId", "name")
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+  } else if (req.user.user_type === "organization") {
+    users = await User.find({ collegeId: req.user._id })
+      .select("-password -__v -created_at -updated_at")
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+  }
 
   if (!users) {
     throw new ApiError(404, "No users found");
   }
 
+  const transformedUsers = await Promise.all(
+    users.map(async (user) => {
+      const userObjs = user.toObject();
+      const eventRegistrations = await EventRegistration.find({
+        "participants.user": user._id,
+      }).populate("event", "name start_time end_time");
+      const events = eventRegistrations.map((reg) => ({
+        name: reg.event.name,
+        startTime: reg.event.start_time || null,
+        endTime: reg.event.end_time || null,
+      }));
+      return {
+        ...userObjs,
+        college: userObjs?.collegeId?.name,
+        collegeId: undefined,
+        events,
+      };
+    })
+  );
+
   return res
     .status(200)
     .json(new ApiResponse(200, transformedUsers, "Users fetched successfully"));
-});
-
-const fetchUerCollege = asyncHandler(async (req, res) => {
-  const users = await User.find({ collegeId : req.user._id }).select(
-    "-password -__v -created_at -updated_at"
-  );
-
-    if (!users) {
-    throw new ApiError(404, "No users found for the specified college");
-  }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, users, "Users fetched successfully"));
 });
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -155,8 +155,7 @@ const deleteUserById = asyncHandler(async (req, res) => {
 
 export const userController = {
   registerUser,
-  fetchAllUsers,
+  fetchUsers,
   deleteUserById,
-  fetchUerCollege,
   updateUser,
 };
