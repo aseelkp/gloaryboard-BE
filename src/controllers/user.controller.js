@@ -6,7 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { userService } from "../services/user.service.js";
 
 const fetchUsers = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, search = "" } = req.query;
+  const { page = 1, limit = 10, search = "", gender } = req.query;
   let users;
   const searchQuery = search
     ? {
@@ -16,6 +16,10 @@ const fetchUsers = asyncHandler(async (req, res) => {
         ],
       }
     : {};
+
+  if (gender) {
+    searchQuery.gender = gender;
+  }
 
   const totalElements = await User.countDocuments(searchQuery);
 
