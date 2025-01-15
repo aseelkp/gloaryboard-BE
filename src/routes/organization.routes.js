@@ -16,7 +16,7 @@ router.route("/register").post( upload.single('image'), userController.registerU
 router.route("/update/:id").put( upload.single('image'), userController.updateUser);
 router.route("/me").get(authController.getCurrentUser);
 router.route("/delete/:id").delete(userController.deleteUserById);
-router.route("/users").get(userController.fetchUerCollege);
+router.route("/users").get(userController.fetchUsers);
 
 // event registration routes
 router.route("/event-registration").get(eventRegistrationController.getAllEventRegistrations);

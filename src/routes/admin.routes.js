@@ -20,7 +20,7 @@ router.route("/orgs/update/:id").patch(adminController.updateOrg);
 router.route("/orgs/delete/:id").delete(adminController.deleteOrg);
 
 // User routes
-router.route("/users").get(userController.fetchAllUsers);
+// router.route("/users").get(userController.fetchAllUsers);
 
 
 // Event Type routes
