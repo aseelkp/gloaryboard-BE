@@ -35,29 +35,29 @@ const fetchUsers = asyncHandler(async (req, res) => {
     throw new ApiError(404, "No users found");
   }
 
-  const transformedUsers = await Promise.all(
-    users.map(async (user) => {
-      const userObjs = user.toObject();
-      const eventRegistrations = await EventRegistration.find({
-        "participants.user": user._id,
-      }).populate("event", "name start_time end_time");
-      const events = eventRegistrations.map((reg) => ({
-        name: reg.event.name,
-        startTime: reg.event.start_time || null,
-        endTime: reg.event.end_time || null,
-      }));
-      return {
-        ...userObjs,
-        college: userObjs?.collegeId?.name,
-        collegeId: undefined,
-        events,
-      };
-    })
-  );
+  // const transformedUsers = await Promise.all(
+  //   users.map(async (user) => {
+  //     const userObjs = user.toObject();
+  //     const eventRegistrations = await EventRegistration.find({
+  //       "participants.user": user._id,
+  //     }).populate("event", "name start_time end_time");
+  //     const events = eventRegistrations.map((reg) => ({
+  //       name: reg.event.name,
+  //       startTime: reg.event.start_time || null,
+  //       endTime: reg.event.end_time || null,
+  //     }));
+  //     return {
+  //       ...userObjs,
+  //       college: userObjs?.collegeId?.name,
+  //       collegeId: undefined,
+  //       events,
+  //     };
+  //   })
+  // );
 
   return res
     .status(200)
-    .json(new ApiResponse(200, transformedUsers, "Users fetched successfully"));
+    .json(new ApiResponse(200, users, "Users fetched successfully"));
 });
 
 const registerUser = asyncHandler(async (req, res) => {
