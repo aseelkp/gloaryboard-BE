@@ -738,7 +738,7 @@ export const generateGroupProgramParticipantsList = async (program) => {
     // Dynamic row height calculation based on number of participants
     const getRowHeight = (group) => {
       const participantCount = group.participants.length;
-      const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(group.college, 10) / (columnWidths.name - 10));
+      const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(sanitizeText(group.college), 10) / (columnWidths.name - 10));
       const collegeNameHeight = noOfLinesForCollege * 13 + 10;
       // Height per participant name (assuming 12 points per name)
       const participantHeight = 12;
@@ -904,7 +904,7 @@ export const generateGroupProgramParticipantsList = async (program) => {
             });
           } else if (index === 1) {
             // Draw college name
-            const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(group.college, 10) / (width - 10));
+            const noOfLinesForCollege = Math.ceil(helveticaBold.widthOfTextAtSize(sanitizeText(group.college), 10) / (width - 10));
             page.drawText(sanitizeText(group.college), {
               x: x + 5,
               y: y - 15,
