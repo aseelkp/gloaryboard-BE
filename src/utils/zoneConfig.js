@@ -26,6 +26,14 @@ export const getZoneConfig = (zone) => {
           DB_NAME: "D-Zone",
           idPrefix : "KPM"
         };
+      case 'f':
+        return {
+          primaryColor: rgb(0.35, 0.78, 0.81), 
+          headerImagePath: './src/templates/zone_f_participant_ticket_header.png',
+          footerText: ["Kindly submit the F-zone copy along with the following documents to the Program Office on or before 21st January.", "A copy of your SSLC Book.", "A copy of your Hall Ticket."],
+          DB_NAME: "F-Zone",
+          idPrefix : "KSK"
+        };
       default:
         return null;
     }
