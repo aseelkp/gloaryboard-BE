@@ -10,7 +10,7 @@ const deleteOrg = async (id) => {
             throw new ApiError(404, "Organization not found");
         }
 
-        const participants = await User.find({ college: org.name });
+        const participants = await User.find({ collegeId: id });
 
         if (participants.length > 0) {
             throw new ApiError(400, "Cannot delete organization with participants, please delete participants first");
