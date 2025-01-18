@@ -587,109 +587,110 @@ const fetchLeaderboardData = async () => {
     // Get top scorers by result_category
     const categoryTopScorers = await Result.aggregate([
       {
-        $lookup: {
-          from: "events",
-          localField: "event",
-          foreignField: "_id",
-          as: "eventDetails",
+      $lookup: {
+        from: "events",
+        localField: "event",
+        foreignField: "_id",
+        as: "eventDetails",
+      },
+      },
+      {
+      $unwind: "$eventDetails",
+      },
+      {
+      $match: {
+        "eventDetails.result_category": {
+        $in: ["saahithyolsavam", "chithrolsavam"],
         },
       },
-      {
-        $unwind: "$eventDetails",
       },
       {
-        $match: {
-          "eventDetails.result_category": {
-            $in: ["saahithyolsavam", "chithrolsavam"],
-          },
-        },
+      $unwind: "$winningRegistrations",
       },
       {
-        $unwind: "$winningRegistrations",
+      $lookup: {
+        from: "eventregistrations",
+        localField: "winningRegistrations.eventRegistration",
+        foreignField: "_id",
+        as: "eventRegistrationDetails",
+      },
       },
       {
-        $lookup: {
-          from: "eventregistrations",
-          localField: "winningRegistrations.eventRegistration",
-          foreignField: "_id",
-          as: "eventRegistrationDetails",
-        },
+      $unwind: "$eventRegistrationDetails",
       },
       {
-        $unwind: "$eventRegistrationDetails",
+      $unwind: "$eventRegistrationDetails.participants",
       },
       {
-        $unwind: "$eventRegistrationDetails.participants",
+      $lookup: {
+        from: "users",
+        localField: "eventRegistrationDetails.participants.user",
+        foreignField: "_id",
+        as: "participantDetails",
       },
-      {
-        $lookup: {
-          from: "users",
-          localField: "eventRegistrationDetails.participants.user",
-          foreignField: "_id",
-          as: "participantDetails",
-        },
       },
       { $unwind: "$participantDetails" },
       {
-        $lookup: {
-          from: "admins",
-          localField: "participantDetails.collegeId",
-          foreignField: "_id",
-          as: "participantDetails.college",
-        },
+      $lookup: {
+        from: "admins",
+        localField: "participantDetails.collegeId",
+        foreignField: "_id",
+        as: "participantDetails.college",
+      },
       },
       {
-        $unwind: "$participantDetails.college",
+      $unwind: "$participantDetails.college",
       },
       {
-        $group: {
-          _id: {
-            category: "$eventDetails.result_category",
-            user: "$participantDetails._id",
-          },
-          category: {
-            $first: "$eventDetails.result_category",
-          },
-          userName: {
-            $first: "$participantDetails.name",
-          },
-          image: {
-            $first: "$participantDetails.image",
-          },
-          college: {
-            $first: "$participantDetails.college",
-          },
-
-          totalScore: {
-            $sum: "$eventRegistrationDetails.score",
-          },
+      $group: {
+        _id: {
+        category: "$eventDetails.result_category",
+        user: "$participantDetails._id",
+        },
+        category: {
+        $first: "$eventDetails.result_category",
+        },
+        userName: {
+        $first: "$participantDetails.name",
+        },
+        image: {
+        $first: "$participantDetails.image",
+        },
+        college: {
+        $first: "$participantDetails.college",
+        },
+        totalScore: {
+        $sum: "$eventRegistrationDetails.score",
         },
       },
-      {
-        $sort: {
-          category: 1,
-          totalScore: -1,
-        },
       },
       {
-        $group: {
-          _id: "$category",
-          topScorer: {
-            $first: "$$ROOT",
-          },
-        },
+      $sort: {
+        category: 1,
+        totalScore: -1,
+      },
       },
       {
-        $project: {
-          _id: 0,
-          category: "$_id",
-          topScorer: {
-            name: "$topScorer.userName",
-            score: "$topScorer.totalScore",
-            image: "$topScorer.image",
-            college: "$topScorer.college.name",
-          },
+      $group: {
+        _id: "$category",
+        topScorers: {
+        $push: {
+          name: "$userName",
+          score: "$totalScore",
+          image: "$image",
+          college: "$college.name",
         },
+        },
+      },
+      },
+      {
+      $project: {
+        _id: 0,
+        category: "$_id",
+        topScorers: {
+        $slice: ["$topScorers", 10],
+        },
+      },
       },
     ]);
 
@@ -708,29 +709,49 @@ const fetchLeaderboardData = async () => {
       {
         $group: {
           _id: "$gender",
-          topScorer: { $first: "$$ROOT" },
+          topScorers: { $push: "$$ROOT" },
         },
+      },
+      {
+        $unwind: "$topScorers",
       },
       {
         $lookup: {
           from: "admins",
-          localField: "topScorer.collegeId",
+          localField: "topScorers.collegeId",
           foreignField: "_id",
-          as: "topScorer.college",
+          as: "topScorers.college",
         },
       },
       {
-        $unwind: "$topScorer.college",
+        $unwind: "$topScorers.college",
+      },
+      {
+        $group: {
+          _id: "$_id",
+          topScorers: { $push: "$topScorers" },
+        },
       },
       {
         $project: {
           _id: 0,
           gender: "$_id",
-          topScorer: {
-            name: "$topScorer.name",
-            score: "$topScorer.total_score",
-            image: "$topScorer.image",
-            college: "$topScorer.college.name",
+          topScorers: {
+            $slice: [
+              {
+                $map: {
+                  input: "$topScorers",
+                  as: "scorer",
+                  in: {
+                    name: "$$scorer.name",
+                    score: "$$scorer.total_score",
+                    image: "$$scorer.image",
+                    college: "$$scorer.college.name",
+                  },
+                },
+              },
+              10,
+            ],
           },
         },
       },
