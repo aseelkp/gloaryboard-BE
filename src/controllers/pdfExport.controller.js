@@ -4,6 +4,8 @@ import { EventRegistration } from "../models/eventRegistration.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { generateParticipantTickets, generateProgramParticipantsList, generateGroupProgramParticipantsList } from "../services/pdfExport.service.js";
 
+const sanitizeText = (text) => text.replace(/\t/g, " ");
+
 const getParticipantTickets = asyncHandler(async (req, res, next) => {
   const collegeId = req.user.id;
 
@@ -36,28 +38,28 @@ const getParticipantTickets = asyncHandler(async (req, res, next) => {
 
       return {
         regId: user.userId,
-        name: user.name.toUpperCase(),
+        name: sanitizeText(user.name).toUpperCase(),
         sex: user.gender.toUpperCase(),
         zone: "C zone",
-        college: userCollege,
-        course: user.course,
+        college: sanitizeText(userCollege),
+        course: sanitizeText(user.course),
         dateOfBirth: new Date(user.dob).toLocaleDateString("en-GB"),
         image: user.image,
         semester: user.semester.toString(),
         programs: {
           offStage: eventRegistrations
             .filter((reg) => !reg.event.event_type.is_onstage)
-            .map((reg) => reg.event.name),
+            .map((reg) => sanitizeText(reg.event.name)),
           stage: eventRegistrations
             .filter(
               (reg) =>
                 reg.event.event_type.is_onstage &&
                 !reg.event.event_type.is_group
             )
-            .map((reg) => reg.event.name),
+            .map((reg) => sanitizeText(reg.event.name)),
           group: eventRegistrations
             .filter((reg) => reg.event.event_type.is_group)
-            .map((reg) => reg.event.name),
+            .map((reg) => sanitizeText(reg.event.name)),
         },
       };
     })
@@ -104,27 +106,27 @@ const getParticipantTicketById = asyncHandler(async (req, res, next) => {
   const transformedUser = [
     {
       regId: user.userId,
-      name: user.name.toUpperCase(),
+      name: sanitizeText(user.name).toUpperCase(),
       sex: user.gender.toUpperCase(),
       zone: "C zone",
-      college:userCollege,
-      course: user.course,
+      college: sanitizeText(userCollege),
+      course: sanitizeText(user.course),
       dateOfBirth: new Date(user.dob).toLocaleDateString("en-GB"),
       image: user.image,
       semester: user.semester.toString(),
       programs: {
         offStage: eventRegistrations
           .filter((reg) => !reg.event.event_type.is_onstage)
-          .map((reg) => reg.event.name),
+          .map((reg) => sanitizeText(reg.event.name)),
         stage: eventRegistrations
           .filter(
             (reg) =>
               reg.event.event_type.is_onstage && !reg.event.event_type.is_group
           )
-          .map((reg) => reg.event.name),
+          .map((reg) => sanitizeText(reg.event.name)),
         group: eventRegistrations
           .filter((reg) => reg.event.event_type.is_group)
-          .map((reg) => reg.event.name),
+          .map((reg) => sanitizeText(reg.event.name)),
       },
     },
   ];
@@ -156,17 +158,17 @@ const getProgramParticipantsListById = asyncHandler(async (req, res, next) => {
     return next(new ApiError(404, "No registrations found for the specified event"));
   }
 
-  const eventName = eventRegistrations[0].event.name;
+  const eventName = sanitizeText(eventRegistrations[0].event.name);
   const eventTypeObj = eventRegistrations[0].event.event_type;
   const eventType = !eventTypeObj.is_onstage ? "Off Stage" : eventTypeObj.is_group ? "Group" : "Stage";
 
   const participants = eventTypeObj.is_group ? eventRegistrations.map((reg) => ({
-    college: reg.participants[0].user.college,
-    participants: reg.participants.map((participant) => participant.user.name)
+    college: sanitizeText(reg.participants[0].user.college),
+    participants: reg.participants.map((participant) => sanitizeText(participant.user.name))
   })) :
   eventRegistrations.map((reg) => ({
-    name: reg.participants[0].user.name,
-    college: reg.participants[0].user.college
+    name: sanitizeText(reg.participants[0].user.name),
+    college: sanitizeText(reg.participants[0].user.college)
   }));
   
   const data = {
