@@ -172,6 +172,7 @@ const fetchResultByEventId = async (event_id) => {
         serial_number: { $first: "$serial_number" },
         name: { $first: "$event.name" },
         is_onstage: { $first: "$event.event_type_details.is_onstage" },
+        is_group: { $first: "$event.event_type_details.is_group" },
         winningRegistrations: { $push: "$winningRegistrations" },
         updated_at: { $first: "$updatedAt" }
       },
