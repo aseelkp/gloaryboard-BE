@@ -124,6 +124,21 @@ const fetchResultByEventId = async (event_id) => {
         as: "winningRegistrations.eventRegistration.participants.user",
       },
     },
+    // Step 8: Lookup college details for any user in the event registration
+    {
+      $lookup: {
+        from: "admins",
+        localField: "winningRegistrations.eventRegistration.participants.user.collegeId",
+        foreignField: "_id",
+        as: "collegeDetails",
+      },
+    },
+    {
+      $unwind: {
+        path: "$collegeDetails",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
     // Step 9: Project only necessary fields and exclude unnecessary fields
     {
       $project: {
@@ -139,9 +154,18 @@ const fetchResultByEventId = async (event_id) => {
         "winningRegistrations.eventRegistration.updated_at": 0,
         "winningRegistrations.eventRegistration.__v": 0,
         "winningRegistrations.eventRegistration.event": 0,
+        "collegeDetails.created_at": 0,
+        "collegeDetails.updated_at": 0,
+        "collegeDetails.__v": 0,
       },
     },
-    // Step 10: Group by event and aggregate the winning registrations
+    // Step 10: Add collegeName to eventRegistration
+    {
+      $addFields: {
+        "winningRegistrations.eventRegistration.collegeName": "$collegeDetails.name",
+      },
+    },
+    // Step 11: Group by event and aggregate the winning registrations
     {
       $group: {
         _id: "$event._id",
@@ -149,10 +173,10 @@ const fetchResultByEventId = async (event_id) => {
         name: { $first: "$event.name" },
         is_onstage: { $first: "$event.event_type_details.is_onstage" },
         winningRegistrations: { $push: "$winningRegistrations" },
-        updated_at: { $first: "$updated_at" },
+        updated_at: { $first: "$updatedAt" }
       },
     },
-    // Step 11: Final projection to ensure clean output
+    // Step 12: Final projection to ensure clean output
     {
       $project: {
         updated_at: 1,
