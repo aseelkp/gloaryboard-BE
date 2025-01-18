@@ -379,8 +379,15 @@ const getEventRegistrationByEventId = asyncHandler(async (req, res, next) => {
         select: "name is_group",
       },
     })
-    .populate("participants.user", "name number department year_of_study")
-    .select("-__v -created_at -updated_at");
+    .populate({
+      path : "participants.user",
+      select : "userId name phoneNumber department year_of_study",
+      populate : {
+        path : "collegeId",
+        select : "name"
+      }
+    })
+    .select("-__v -createdAt -createdAt -score"); 
 
   // if (!eventRegistration) {
   //   return res.status(204).json(new ApiResponse(204, [], "No event registration found"));
