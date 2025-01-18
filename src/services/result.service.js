@@ -146,10 +146,6 @@ const fetchResultByEventId = async (event_id) => {
         "winningRegistrations.eventRegistration.participants.user.created_at": 0,
         "winningRegistrations.eventRegistration.participants.user.updated_at": 0,
         "winningRegistrations.eventRegistration.participants.user.__v": 0,
-        "winningRegistrations.eventRegistration.helpers.user.user_type": 0,
-        "winningRegistrations.eventRegistration.helpers.user.created_at": 0,
-        "winningRegistrations.eventRegistration.helpers.user.updated_at": 0,
-        "winningRegistrations.eventRegistration.helpers.user.__v": 0,
         "winningRegistrations.eventRegistration.created_at": 0,
         "winningRegistrations.eventRegistration.updated_at": 0,
         "winningRegistrations.eventRegistration.__v": 0,
@@ -187,6 +183,7 @@ const fetchResultByEventId = async (event_id) => {
         "winningRegistrations.eventRegistration": 1,
         name: 1,
         is_onstage: 1,
+        is_group: 1,
       },
     },
   ];
