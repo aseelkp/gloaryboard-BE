@@ -161,15 +161,17 @@ const getProgramParticipantsListById = asyncHandler(async (req, res, next) => {
   const eventName = sanitizeText(eventRegistrations[0].event.name);
   const eventTypeObj = eventRegistrations[0].event.event_type;
   const eventType = !eventTypeObj.is_onstage ? "Off Stage" : eventTypeObj.is_group ? "Group" : "Stage";
-
+  
   const participants = eventTypeObj.is_group ? eventRegistrations.map((reg) => ({
     college: sanitizeText(reg.participants[0].user.college),
     participants: reg.participants.map((participant) => sanitizeText(participant.user.name))
   })) :
-  eventRegistrations.map((reg) => ({
-    name: sanitizeText(reg.participants[0].user.name),
-    college: sanitizeText(reg.participants[0].user.college)
-  }));
+  eventRegistrations
+    .filter(reg => reg.participants[0].user)
+    .map((reg) => ({
+      name: sanitizeText(reg.participants[0].user?.name),
+      college: sanitizeText(reg.participants[0].user?.college)
+    }));
   
   const data = {
     name: eventName,

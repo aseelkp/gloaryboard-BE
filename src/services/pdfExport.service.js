@@ -34,7 +34,6 @@ export const generateParticipantTickets = async (users) => {
     const ticketY = pageHeight - margin - headerImageHeight - 37;
 
     for (const user of users) {
-      console.log(user.course, user.regId);
       let image;
       if (user.image) {
         if (user.image.endsWith(".png")) {
