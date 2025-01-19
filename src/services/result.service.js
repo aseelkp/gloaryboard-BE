@@ -128,7 +128,8 @@ const fetchResultByEventId = async (event_id) => {
     {
       $lookup: {
         from: "admins",
-        localField: "winningRegistrations.eventRegistration.participants.user.collegeId",
+        localField:
+          "winningRegistrations.eventRegistration.participants.user.collegeId",
         foreignField: "_id",
         as: "collegeDetails",
       },
@@ -158,7 +159,8 @@ const fetchResultByEventId = async (event_id) => {
     // Step 10: Add collegeName to eventRegistration
     {
       $addFields: {
-        "winningRegistrations.eventRegistration.collegeName": "$collegeDetails.name",
+        "winningRegistrations.eventRegistration.collegeName":
+          "$collegeDetails.name",
       },
     },
     // Step 11: Group by event and aggregate the winning registrations
@@ -170,7 +172,7 @@ const fetchResultByEventId = async (event_id) => {
         is_onstage: { $first: "$event.event_type_details.is_onstage" },
         is_group: { $first: "$event.event_type_details.is_group" },
         winningRegistrations: { $push: "$winningRegistrations" },
-        updated_at: { $first: "$updatedAt" }
+        updated_at: { $first: "$updatedAt" },
       },
     },
     // Step 12: Final projection to ensure clean output
@@ -544,11 +546,6 @@ const fetchLeaderboardData = async () => {
   try {
     const lastCount = await Counter.findOne({ _id: "result" });
 
-    const topScorers = await User.find()
-      .sort({ total_score: -1 })
-      .limit(10)
-      .select("-created_at -updated_at -__v -user_type -_id");
-
     const collegeResults = await Result.aggregate([
       {
         $lookup: {
@@ -586,7 +583,6 @@ const fetchLeaderboardData = async () => {
           as: "participantDetails",
         },
       },
-      { $unwind: "$participantDetails" },
       {
         $lookup: {
           from: "admins",
@@ -600,7 +596,7 @@ const fetchLeaderboardData = async () => {
         $group: {
           _id: "$collegeDetails._id",
           collegeName: { $first: "$collegeDetails.name" },
-          totalScore: { $sum: "$registrationDetails.score" },
+          totalScore: { $sum: "$registrationDetails.score" }, // Sum scores only once per registration
         },
       },
       { $sort: { totalScore: -1 } },
@@ -609,110 +605,110 @@ const fetchLeaderboardData = async () => {
     // Get top scorers by result_category
     const categoryTopScorers = await Result.aggregate([
       {
-      $lookup: {
-        from: "events",
-        localField: "event",
-        foreignField: "_id",
-        as: "eventDetails",
-      },
+        $lookup: {
+          from: "events",
+          localField: "event",
+          foreignField: "_id",
+          as: "eventDetails",
+        },
+      }, 
+      {
+        $unwind: "$eventDetails",
       },
       {
-      $unwind: "$eventDetails",
-      },
-      {
-      $match: {
-        "eventDetails.result_category": {
-        $in: ["saahithyolsavam", "chithrolsavam"],
+        $match: {
+          "eventDetails.result_category": {
+            $in: ["saahithyolsavam", "chithrolsavam"],
+          },
         },
       },
+      {
+        $unwind: "$winningRegistrations",
       },
       {
-      $unwind: "$winningRegistrations",
+        $lookup: {
+          from: "eventregistrations",
+          localField: "winningRegistrations.eventRegistration",
+          foreignField: "_id",
+          as: "eventRegistrationDetails",
+        },
       },
       {
-      $lookup: {
-        from: "eventregistrations",
-        localField: "winningRegistrations.eventRegistration",
-        foreignField: "_id",
-        as: "eventRegistrationDetails",
-      },
+        $unwind: "$eventRegistrationDetails",
       },
       {
-      $unwind: "$eventRegistrationDetails",
+        $unwind: "$eventRegistrationDetails.participants",
       },
       {
-      $unwind: "$eventRegistrationDetails.participants",
-      },
-      {
-      $lookup: {
-        from: "users",
-        localField: "eventRegistrationDetails.participants.user",
-        foreignField: "_id",
-        as: "participantDetails",
-      },
+        $lookup: {
+          from: "users",
+          localField: "eventRegistrationDetails.participants.user",
+          foreignField: "_id",
+          as: "participantDetails",
+        },
       },
       { $unwind: "$participantDetails" },
       {
-      $lookup: {
-        from: "admins",
-        localField: "participantDetails.collegeId",
-        foreignField: "_id",
-        as: "participantDetails.college",
-      },
+        $lookup: {
+          from: "admins",
+          localField: "participantDetails.collegeId",
+          foreignField: "_id",
+          as: "participantDetails.college",
+        },
       },
       {
-      $unwind: "$participantDetails.college",
+        $unwind: "$participantDetails.college",
       },
       {
-      $group: {
-        _id: {
-        category: "$eventDetails.result_category",
-        user: "$participantDetails._id",
+        $group: {
+          _id: {
+            category: "$eventDetails.result_category",
+            user: "$participantDetails._id",
+          },
+          category: {
+            $first: "$eventDetails.result_category",
+          },
+          userName: {
+            $first: "$participantDetails.name",
+          },
+          image: {
+            $first: "$participantDetails.image",
+          },
+          college: {
+            $first: "$participantDetails.college",
+          },
+          totalScore: {
+            $sum: "$eventRegistrationDetails.score",
+          },
         },
-        category: {
-        $first: "$eventDetails.result_category",
-        },
-        userName: {
-        $first: "$participantDetails.name",
-        },
-        image: {
-        $first: "$participantDetails.image",
-        },
-        college: {
-        $first: "$participantDetails.college",
-        },
-        totalScore: {
-        $sum: "$eventRegistrationDetails.score",
-        },
-      },
       },
       {
-      $sort: {
-        category: 1,
-        totalScore: -1,
-      },
+        $sort: {
+          category: 1,
+          totalScore: -1,
+        },
       },
       {
-      $group: {
-        _id: "$category",
-        topScorers: {
-        $push: {
-          name: "$userName",
-          score: "$totalScore",
-          image: "$image",
-          college: "$college.name",
+        $group: {
+          _id: "$category",
+          topScorers: {
+            $push: {
+              name: "$userName",
+              score: "$totalScore",
+              image: "$image",
+              college: "$college.name",
+            },
+          },
         },
-        },
-      },
       },
       {
-      $project: {
-        _id: 0,
-        category: "$_id",
-        topScorers: {
-        $slice: ["$topScorers", 10],
+        $project: {
+          _id: 0,
+          category: "$_id",
+          topScorers: {
+            $slice: ["$topScorers", 10],
+          },
         },
-      },
       },
     ]);
 
@@ -781,7 +777,6 @@ const fetchLeaderboardData = async () => {
 
     return {
       lastCount: lastCount.seq,
-      topScorers,
       results: collegeResults,
       categoryTopScorers,
       genderTopScorers,
