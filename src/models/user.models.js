@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     collegeId: { type: Schema.Types.ObjectId, ref: "Admin", required: true },
     semester: { type: Number, required: true },
     year_of_study: { type: Number, required: true },
-    capId: { type: String, required: true },
+    capId: { type: String, required: true , unique: true},
     image: { type: String, required: true },
     dob: { type: Date, required: true },
     total_score: { type: Number, default: 0 },
