@@ -7,6 +7,7 @@ import { EventType } from "../models/eventType.models.js";
 import { DEPARTMENTS, POSITIONS, RESULT_CATEGORIES } from "../constants.js";
 import { User } from "../models/user.models.js";
 import { Counter } from "../models/counter.model.js";
+import { Leaderboard } from "../models/leaderboard.model.js";
 
 const fetchAllResults = async () => {
   try {
@@ -267,9 +268,12 @@ const createResult = async (event_id, winningRegistrations, user) => {
     });
 
     await result.save({ session });
-
     await session.commitTransaction();
     console.log("Transaction committed");
+
+    // Trigger leaderboard recalculation
+    await updateLeaderboardData();
+
     return result;
   } catch (error) {
     await session.abortTransaction();
@@ -333,6 +337,10 @@ const deleteResult = async (resultId) => {
     // Commit the transaction
     await session.commitTransaction();
     console.log("Transaction committed successfully");
+
+    // Trigger leaderboard recalculation
+    await updateLeaderboardData();
+
     return true;
   } catch (error) {
     // Rollback transaction
@@ -436,6 +444,10 @@ const updateResult = async (resultId, updatedWinningRegistrations, user) => {
 
     await session.commitTransaction();
     console.log("Transaction committed");
+
+    // Trigger leaderboard recalculation
+    await updateLeaderboardData();
+
     return result;
   } catch (error) {
     await session.abortTransaction();
@@ -542,8 +554,9 @@ const fetchAllIndividualResults = async () => {
   return results;
 };
 
-const fetchLeaderboardData = async () => {
+const updateLeaderboardData = async () => {
   try {
+
     const lastCount = await Counter.findOne({ _id: "result" });
 
     const collegeResults = await Result.aggregate([
@@ -776,12 +789,31 @@ const fetchLeaderboardData = async () => {
       },
     ]);
 
-    return {
+    const newLeaderboard = new Leaderboard({
       lastCount: lastCount.seq,
       results: collegeResults,
       categoryTopScorers,
       genderTopScorers,
-    };
+    });
+
+    await newLeaderboard.save();
+
+    return newLeaderboard;
+  } catch (error) {
+    console.error(error.message);
+    throw new ApiError(500, "Failed to fetch leaderboard data");
+  }
+};
+
+const fetchLeaderboardData = async () => {
+  try {
+    const leaderboard = await Leaderboard.findOne().sort({ createdAt: -1 });
+
+    if (!leaderboard) {
+      throw new ApiError(404, "Leaderboard data not found");
+    }
+
+    return leaderboard;
   } catch (error) {
     console.error(error.message);
     throw new ApiError(500, "Failed to fetch leaderboard data");
@@ -795,5 +827,6 @@ export const resultServices = {
   updateResult,
   deleteResult,
   fetchAllIndividualResults,
-  fetchLeaderboardData,
+   updateLeaderboardData,
+   fetchLeaderboardData,
 };
