@@ -168,10 +168,18 @@ const getProgramParticipantsListById = asyncHandler(async (req, res, next) => {
   })) :
   eventRegistrations
     .filter(reg => reg.participants[0].user)
-    .map((reg) => ({
-      name: sanitizeText(reg.participants[0].user?.name),
-      college: sanitizeText(reg.participants[0].user?.college)
-    }));
+    .flatMap((reg) => {
+      if (reg.participants.length > 1) {
+        return reg.participants.map((participant) => ({
+          name: sanitizeText(participant.user?.name),
+          college: sanitizeText(participant.user?.college),
+        }));
+      }
+      return {
+        name: sanitizeText(reg.participants[0].user?.name),
+        college: sanitizeText(reg.participants[0].user?.college),
+      };
+    });
   
   const data = {
     name: eventName,
