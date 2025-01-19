@@ -717,6 +717,7 @@ const fetchLeaderboardData = async () => {
       {
         $match: {
           gender: { $in: ["male", "female"] },
+          total_score: { $gt: 0 }, // Only include users with scores greater than 0
         },
       },
       {
