@@ -726,65 +726,93 @@ const updateLeaderboardData = async () => {
     ]);
 
     // Get top scorers by gender
-    const genderTopScorers = await User.aggregate([
+    const genderTopScorers = await Result.aggregate([
+      {
+        $lookup: {
+          from: "events",
+          localField: "event",
+          foreignField: "_id",
+          as: "eventDetails",
+        },
+      },
+      { $unwind: "$eventDetails" },
+      {
+        $lookup: {
+          from: "eventtypes",
+          localField: "eventDetails.event_type",
+          foreignField: "_id",
+          as: "eventTypeDetails",
+        },
+      },
+      { $unwind: "$eventTypeDetails" },
       {
         $match: {
-          gender: { $in: ["male", "female"] },
-          total_score: { $gt: 0 }, // Only include users with scores greater than 0
+          "eventTypeDetails.is_onstage": true,
+          "eventTypeDetails.is_group": false,
+        },
+      },
+      { $unwind: "$winningRegistrations" },
+      {
+        $lookup: {
+          from: "eventregistrations",
+          localField: "winningRegistrations.eventRegistration",
+          foreignField: "_id",
+          as: "eventRegistrationDetails",
+        },
+      },
+      { $unwind: "$eventRegistrationDetails" },
+      { $unwind: "$eventRegistrationDetails.participants" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "eventRegistrationDetails.participants.user",
+          foreignField: "_id",
+          as: "participantDetails",
+        },
+      },
+      { $unwind: "$participantDetails" },
+      {
+        $match: {
+          "participantDetails.gender": { $in: ["male", "female"] },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            gender: "$participantDetails.gender",
+            user: "$participantDetails._id",
+          },
+          gender: { $first: "$participantDetails.gender" },
+          userName: { $first: "$participantDetails.name" },
+          image: { $first: "$participantDetails.image" },
+          college: { $first: "$participantDetails.collegeId" },
+          totalScore: { $sum: "$eventRegistrationDetails.score" },
         },
       },
       {
         $sort: {
-          total_score: -1,
+          gender: 1,
+          totalScore: -1,
         },
       },
       {
         $group: {
           _id: "$gender",
-          topScorers: { $push: "$$ROOT" },
-        },
-      },
-      {
-        $unwind: "$topScorers",
-      },
-      {
-        $lookup: {
-          from: "admins",
-          localField: "topScorers.collegeId",
-          foreignField: "_id",
-          as: "topScorers.college",
-        },
-      },
-      {
-        $unwind: "$topScorers.college",
-      },
-      {
-        $group: {
-          _id: "$_id",
-          topScorers: { $push: "$topScorers" },
+          topScorers: {
+            $push: {
+              name: "$userName",
+              score: "$totalScore",
+              image: "$image",
+              college: "$college",
+            },
+          },
         },
       },
       {
         $project: {
           _id: 0,
           gender: "$_id",
-          topScorers: {
-            $slice: [
-              {
-                $map: {
-                  input: "$topScorers",
-                  as: "scorer",
-                  in: {
-                    name: "$$scorer.name",
-                    score: "$$scorer.total_score",
-                    image: "$$scorer.image",
-                    college: "$$scorer.college.name",
-                  },
-                },
-              },
-              10,
-            ],
-          },
+          topScorers: { $slice: ["$topScorers", 10] },
         },
       },
     ]);
