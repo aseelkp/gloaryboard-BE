@@ -558,6 +558,7 @@ const updateLeaderboardData = async () => {
   try {
 
     const lastCount = await Counter.findOne({ _id: "result" });
+    const totalResultCount = await Result.countDocuments();
 
     const collegeResults = await Result.aggregate([
       {
@@ -818,6 +819,7 @@ const updateLeaderboardData = async () => {
     ]);
 
     const newLeaderboard = new Leaderboard({
+      totalResultCount,
       lastCount: lastCount.seq,
       results: collegeResults,
       categoryTopScorers,
