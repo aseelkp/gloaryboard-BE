@@ -35,15 +35,13 @@ router.route("/events").post(eventController.createEvent);
 router.route("/events/update/:id").patch(eventController.updateEvent);
 router.route("/events/delete/:id").delete(eventController.deleteEvent);
 
-
-
 // Result routes
 router.route("/result").post(resultController.createResult);
 router.route("/result/update/:id").put(resultController.updateResult);
 router.route("/result/delete/:id").delete(resultController.deleteResult);
+router.route("/result/grouped-by-college").get(resultController.fetchResultsGroupedByCollege);
 
 // app config
-
 router.route("/config/create").post(appConfigController.addConfig);
 router.route("/config/update/:id").patch(appConfigController.updateConfig);
 

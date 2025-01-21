@@ -122,6 +122,19 @@ const fetchLeaderboard = asyncHandler(async (req, res, next) => {
   res.status(200).json(new ApiResponse(200, results, "Results found"));
 });
 
+const fetchResultsGroupedByCollege = asyncHandler(async (req, res, next) => {
+
+  const results = await resultServices.fetchResultsGroupedByCollege();
+
+  if (results.length === 0) {
+    return new ApiResponse (200 , results , "No results found");
+  }
+
+  res.status(200).json(new ApiResponse(200, results, "Results found"));
+
+});
+
+
 export const resultController = {
   createResult,
   fetchAllResults,
@@ -131,4 +144,5 @@ export const resultController = {
   deleteResult,
   fetchAllIndividualResults,
   fetchLeaderboard,
+  fetchResultsGroupedByCollege
 };
