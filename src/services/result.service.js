@@ -786,7 +786,7 @@ const updateLeaderboardData = async () => {
           gender: { $first: "$participantDetails.gender" },
           userName: { $first: "$participantDetails.name" },
           image: { $first: "$participantDetails.image" },
-          college: { $first: "$participantDetails.collegeId" },
+          college: { $first: "$participantDetails.college" },
           totalScore: { $sum: "$eventRegistrationDetails.score" },
         },
       },
