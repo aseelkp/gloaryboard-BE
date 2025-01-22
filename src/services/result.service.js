@@ -556,7 +556,6 @@ const fetchAllIndividualResults = async () => {
 
 const updateLeaderboardData = async () => {
   try {
-
     const lastCount = await Counter.findOne({ _id: "result" });
     const totalResultCount = await Result.countDocuments();
 
@@ -625,7 +624,7 @@ const updateLeaderboardData = async () => {
           foreignField: "_id",
           as: "eventDetails",
         },
-      }, 
+      },
       {
         $unwind: "$eventDetails",
       },
@@ -850,6 +849,77 @@ const fetchLeaderboardData = async () => {
   }
 };
 
+const fetchResultsGroupedByCollege = async () => {
+  const aggregate = [
+    {
+      $lookup: {
+        from: "events",
+        localField: "event",
+        foreignField: "_id",
+        as: "eventDetails",
+      },
+    },
+    { $unwind: "$eventDetails" },
+    { $unwind: "$winningRegistrations" },
+    {
+      $lookup: {
+        from: "eventregistrations",
+        localField: "winningRegistrations.eventRegistration",
+        foreignField: "_id",
+        as: "eventRegistrationDetails",
+      },
+    },
+    { $unwind: "$eventRegistrationDetails" },
+    {
+      $lookup: {
+        from: "users",
+        localField: "eventRegistrationDetails.participants.user",
+        foreignField: "_id",
+        as: "participantDetails",
+      },
+    },
+    {
+      $lookup: {
+        from: "admins",
+        localField: "participantDetails.collegeId",
+        foreignField: "_id",
+        as: "collegeDetails",
+      },
+    },
+    { $unwind: "$collegeDetails" },
+    {
+      $group: {
+        _id: "$collegeDetails._id",
+        college: { $first: "$collegeDetails.name" },
+        totalScore: { $sum: "$eventRegistrationDetails.score" },
+        events: {
+          $push: {
+            event: "$eventDetails.name",
+            position: "$winningRegistrations.position",
+            score: "$eventRegistrationDetails.score",
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        college: 1,
+        totalScore: 1,
+        events: 1,
+      },
+    },
+    {
+      $sort: {
+        totalScore: -1,
+      },
+    },
+  ];
+
+  const results = await Result.aggregate(aggregate);
+  return results;
+};
+
 export const resultServices = {
   fetchAllResults,
   fetchResultByEventId,
@@ -857,6 +927,7 @@ export const resultServices = {
   updateResult,
   deleteResult,
   fetchAllIndividualResults,
-   updateLeaderboardData,
-   fetchLeaderboardData,
+  updateLeaderboardData,
+  fetchLeaderboardData,
+  fetchResultsGroupedByCollege,
 };
